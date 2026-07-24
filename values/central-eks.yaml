@@ -1,0 +1,114 @@
+production:
+  enabled: true
+
+image:
+  registry: public.ecr.aws
+  repository: REPLACE_APPLICATION_REPOSITORY
+  digest: REPLACE_APPLICATION_DIGEST
+
+extraction:
+  enabled: true
+  denyEgress: true
+  image:
+    repository: REPLACE_EXTRACTION_IMAGE
+    digest: REPLACE_EXTRACTION_DIGEST
+
+existingSecret: sddp-production-operator-secrets
+generatedSecret: sddp-production-generated
+
+database:
+  runtimeRole: sddp_runtime
+  webRole: sddp_web
+
+security:
+  allowGlobalResourceAccess: true
+
+anchors:
+  bucket: REPLACE_ANCHOR_BUCKET
+  lockMode: compliance
+  retention: 8760h
+
+controlPlane:
+  staticAuth:
+    enabled: true
+
+web:
+  enabled: true
+  managedUsers: true
+  secureCookie: true
+  baseURL: https://REPLACE_APPLICATION_HOST
+  mfa:
+    enabled: true
+    requiredRoles: admin,approver
+
+scanWorkers:
+  rulesetVersion: REPLACE_DETECTOR_BUNDLE
+  detectorManifestDigest: REPLACE_DETECTOR_MANIFEST_DIGEST
+  contextualEngine:
+    enabled: true
+    model: REPLACE_MODEL
+    modelDigest: REPLACE_MODEL_DIGEST
+    version: REPLACE_CONTEXTUAL_VERSION
+  secretEngine:
+    enabled: true
+    version: 1.106.0
+  keda:
+    enabled: true
+  nodeSelector:
+    rapticore.io/workload: scan
+  tolerations:
+    - key: rapticore.io/workload
+      operator: Equal
+      value: scan
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: rapticore.io/capacity
+                operator: In
+                values: [spot]
+
+localModels:
+  ollama:
+    enabled: true
+    models: [REPLACE_MODEL]
+    acceptModelLicenses: true
+    modelPull: { enabled: false }
+    autoscaling: { enabled: true }
+    persistence:
+      enabled: true
+      existingClaim: sddp-models-rox
+      accessModes: [ReadWriteMany]
+    acceleratorResources: { nvidia.com/gpu: 1 }
+    nodeSelector: { rapticore.io/workload: llm }
+    tolerations:
+      - key: rapticore.io/workload
+        operator: Equal
+        value: llm
+        effect: NoSchedule
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: rapticore.io/capacity
+                  operator: In
+                  values: [spot]
+
+config:
+  aws:
+    region: REPLACE_AWS_REGION
+
+serviceAccount:
+  controlPlane:
+    name: sddp-control-plane
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_CONTROL_PLANE_ROLE_ARN
+  scanWorker:
+    name: sddp-scan-worker
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_SCAN_WORKER_ROLE_ARN

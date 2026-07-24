@@ -1,0 +1,12 @@
+# GKE's Filestore CSI driver dynamically provisions a ReadWriteMany share.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sddp-models-rox
+  namespace: sddp
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: standard-rwx
+  resources:
+    requests:
+      storage: 1Ti

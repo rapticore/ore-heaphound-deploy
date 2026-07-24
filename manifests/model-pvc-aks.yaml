@@ -1,0 +1,12 @@
+# Azure Files provides a scale-out-safe ReadWriteMany model source.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sddp-models-rox
+  namespace: sddp
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: azurefile-csi-premium
+  resources:
+    requests:
+      storage: 100Gi

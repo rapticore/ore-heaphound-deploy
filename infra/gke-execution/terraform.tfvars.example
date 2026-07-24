@@ -1,0 +1,8 @@
+project_id          = "replace-with-project"
+network             = "projects/replace/global/networks/replace"
+subnetwork          = "projects/replace/regions/us-central1/subnetworks/replace"
+pods_range_name     = "gke-pods"
+services_range_name = "gke-services"
+authorized_cidrs     = { "203.0.113.10/32" = "administrator" }
+
+source_bucket_names = ["replace-with-approved-source-bucket"]

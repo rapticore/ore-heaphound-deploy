@@ -1,0 +1,6 @@
+resource_group_name = "replace-with-resource-group"
+subnet_id           = "/subscriptions/replace/resourceGroups/replace/providers/Microsoft.Network/virtualNetworks/replace/subnets/replace"
+
+source_storage_scope_ids = [
+  "/subscriptions/replace/resourceGroups/replace/providers/Microsoft.Storage/storageAccounts/replace"
+]

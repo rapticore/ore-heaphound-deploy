@@ -1,0 +1,69 @@
+provider: azure
+production: true
+
+image:
+  repository: REPLACE_APPLICATION_IMAGE
+  digest: REPLACE_APPLICATION_DIGEST
+
+gateway:
+  target: REPLACE_GATEWAY_HOST:443
+  serverName: REPLACE_GATEWAY_HOST
+  tlsSecret: sddp-remote-worker-mtls
+
+pool:
+  id: azure-prod
+  buildDigest: REPLACE_APPLICATION_DIGEST
+  detectorBundle: REPLACE_DETECTOR_BUNDLE
+  detectorManifestDigest: REPLACE_DETECTOR_MANIFEST_DIGEST
+
+autoscaling:
+  enabled: true
+
+serviceAccount:
+  name: sddp-remote-worker
+  annotations:
+    azure.workload.identity/client-id: REPLACE_AZURE_CLIENT_ID
+
+sources:
+  azureBlob:
+    enabled: true
+    accountHosts: [REPLACE_ACCOUNT.blob.core.windows.net]
+
+extraction:
+  managedTika:
+    enabled: true
+    image:
+      repository: REPLACE_EXTRACTION_IMAGE
+      digest: REPLACE_EXTRACTION_DIGEST
+
+detection:
+  contextual:
+    enabled: true
+    local: true
+    model: REPLACE_MODEL
+    modelDigest: REPLACE_MODEL_DIGEST
+    version: REPLACE_CONTEXTUAL_VERSION
+
+localModels:
+  ollama:
+    enabled: true
+    model: REPLACE_MODEL
+    existingClaim: sddp-models-rox
+    acceleratorResources: { nvidia.com/gpu: 1 }
+    autoscaling: { enabled: true }
+
+nodeSelector: { rapticore.io/workload: scan }
+tolerations:
+  - key: rapticore.io/workload
+    operator: Equal
+    value: scan
+    effect: NoSchedule
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: rapticore.io/capacity
+              operator: In
+              values: [spot]

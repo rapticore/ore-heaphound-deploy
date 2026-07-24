@@ -1,0 +1,22 @@
+# Customer-local Terraform data and plans.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+*.auto.tfvars
+
+# Locally pulled or rendered deployment artifacts.
+charts/
+rendered/
+kubeconfig*
+
+# Deployment credentials must be supplied through the customer's secret
+# manager and must never be committed to this public repository.
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+values/*-customer.yaml

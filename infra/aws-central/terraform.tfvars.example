@@ -1,0 +1,10 @@
+name               = "ore-heaphound-prod"
+region             = "us-west-2"
+anchor_bucket_name = "replace-with-globally-unique-object-lock-bucket"
+cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
+source_bucket_arns = [
+  "arn:aws:s3:::replace-with-approved-source-bucket",
+]
+
+# Spot is preferred. Set false only when jobs should wait indefinitely for Spot.
+enable_on_demand_fallback = true
