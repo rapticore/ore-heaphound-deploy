@@ -32,6 +32,26 @@ Each central pool policy must explicitly set `allow_brokered_reads`.
 Do not claim that all source content remains local when brokered reads are
 enabled.
 
+## Public release versus private customer configuration
+
+The public repository contains signed, immutable release coordinates and
+reusable infrastructure templates. Keep every customer-specific value in a
+separate private overlay delivered through the customer's approved secure
+channel:
+
+- `infra/*/terraform.tfvars` for account, project, subscription, network, and
+  source-storage identifiers;
+- `values/<customer>-customer.yaml` for domains, role identities, pool policy,
+  storage classes, and sizing; and
+- the customer's secret manager for credentials, private keys, tokens, and
+  database connection material.
+
+Both `terraform.tfvars` and `values/*-customer.yaml` are ignored by this
+repository. Do not commit customer overlays, Terraform state, kubeconfigs, or
+credentials to either `main` or a release tag. Start an overlay by copying the
+matching released values file, then store and review that copy in the
+customer's private configuration repository.
+
 ## 1. Select and verify a release
 
 Check out an immutable release tag, not `main`:
