@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "profile_id": "production-v1",
+  "extraction_profile": "native-provenance-v1",
+  "components": [
+    {
+      "id": "contextual_model",
+      "kind": "contextual_model",
+      "enabled": true,
+      "version": "qwen2.5:7b-instruct|phi-span-prompt:v3",
+      "runtime": "source-local-ollama-0.32.0",
+      "source": "https://ollama.com/library/qwen2.5",
+      "license": {
+        "expression": "Apache-2.0",
+        "review_required": false
+      },
+      "egress": "none",
+      "artifacts": [
+        {
+          "platform": "ollama/gguf-q4_k_m",
+          "reference": "qwen2.5:7b-instruct",
+          "sha256": "sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e"
+        }
+      ],
+      "inputs": [
+        {
+          "path": "internal/detection/llm/client.go",
+          "sha256": "fdd9c58264cf895b15f1195040ca0e6cf257594ae5e2a67dad8fb2841d2e3612"
+        },
+        {
+          "path": "internal/detection/llm/llm.go",
+          "sha256": "3a5186ac343f715a58afd3c1a3aac7a9147bdeb5a0cf2b582d6c546b82c7c466"
+        },
+        {
+          "path": "internal/modelconfig/config.go",
+          "sha256": "ac387454e2bb704bb1d8dc1c143e6ccd304e0ebcbb8064f8ffaab741f153d3bb"
+        }
+      ],
+      "limitations": [
+        "model weights are a separately versioned volume artifact pinned by the recorded manifest digest, not baked into the application image",
+        "qualification must bind the exact model tag, quantization, manifest digest, prompt, and retained holdout result"
+      ]
+    },
+    {
+      "id": "extraction_runtime",
+      "kind": "extraction_runtime",
+      "enabled": true,
+      "version": "pdfium-wasm-v1|ooxml-v1|tika-4.0.0-beta-1-full|ocr:eng",
+      "runtime": "isolated-extraction-image",
+      "source": "https://hub.docker.com/r/apache/tika",
+      "license": {
+        "expression": "Apache-2.0",
+        "review_required": false
+      },
+      "egress": "none",
+      "artifacts": [
+        {
+          "platform": "linux/multi",
+          "reference": "apache/tika:4.0.0-beta-1-full",
+          "sha256": "sha256:a3a9bb1ab4e970ecd2328b99c4e380b3209f758c7606b7df85f7eda15890d5d4"
+        }
+      ],
+      "inputs": [
+        {
+          "path": "Dockerfile",
+          "sha256": "563bb195f4fcf1eb8237f6c1bc0d24e1919790e8973905a35f629d270913bd55"
+        },
+        {
+          "path": "internal/extraction/archive.go",
+          "sha256": "65f8d47e2e7a2a25a86b83a4237e38b21c4cb11afd71adc1431f2cd5a66a5d03"
+        },
+        {
+          "path": "internal/extraction/chunk.go",
+          "sha256": "ff52aa33d7afba892ec47483e9f8840f0072287a2143bbded933b46ed1b027a7"
+        },
+        {
+          "path": "internal/extraction/extract.go",
+          "sha256": "620495688371f03943ca6d2bfe39407f4b2a1219787d595b85ba3ed3d75d125f"
+        },
+        {
+          "path": "internal/extraction/ooxml.go",
+          "sha256": "239b280e1b7cb8a5a0ef3d447c2d23a73f3030c7908070ab7886c55717728083"
+        },
+        {
+          "path": "internal/extraction/pdf.go",
+          "sha256": "2e23b952fc7694ad247d0328050c39625b5424685443c52b9aa7b10e56a24d69"
+        },
+        {
+          "path": "internal/extraction/structured.go",
+          "sha256": "7b4ec9e0cf306d7de802c6c88d8223ef355d60bbab61c9498bce2ab020fb30bd"
+        },
+        {
+          "path": "internal/extraction/tika.go",
+          "sha256": "cdb9f4c5b5eac28266659998793e09ac25fd4270e45c9772e73ab52a7a5ca029"
+        },
+        {
+          "path": "internal/pdfnative/pdfnative.go",
+          "sha256": "0212bb21399a0edc05bef65f0f585fa6233b2b8dfc3786abb938012f6fef8ddf"
+        }
+      ]
+    },
+    {
+      "id": "kingfisher",
+      "kind": "secret_engine",
+      "enabled": true,
+      "version": "1.106.0",
+      "runtime": "application-image-subprocess",
+      "source": "https://github.com/mongodb/kingfisher",
+      "license": {
+        "expression": "Apache-2.0",
+        "review_required": false
+      },
+      "egress": "none",
+      "artifacts": [
+        {
+          "platform": "linux/amd64",
+          "reference": "kingfisher-linux-x64.tgz",
+          "sha256": "sha256:5320b7a3a2f7a8c9b90990ee90099d70903d84c302e61b54dae87b7000c8c153"
+        },
+        {
+          "platform": "linux/arm64",
+          "reference": "kingfisher-linux-arm64.tgz",
+          "sha256": "sha256:1c888a174b4fa8eaebbddf4b46829f4d00079f44d8b07ed4f13d048fa6068540"
+        }
+      ],
+      "inputs": [
+        {
+          "path": "Dockerfile",
+          "sha256": "563bb195f4fcf1eb8237f6c1bc0d24e1919790e8973905a35f629d270913bd55"
+        },
+        {
+          "path": "internal/secrets/kingfisher.go",
+          "sha256": "355e1e6d8f690d151f2842e503d3977cba753a9a24d1bb01d631453b291bc8e7"
+        },
+        {
+          "path": "internal/secrets/secrets.go",
+          "sha256": "fa6698b7cee942271ca1d1a2caa3d5688950971e31918dd40ea8715f69b579be"
+        }
+      ]
+    },
+    {
+      "id": "native",
+      "kind": "native_rules",
+      "enabled": true,
+      "version": "builtin-v6",
+      "runtime": "application-image-in-process",
+      "source": "repository://internal/detection",
+      "license": {
+        "expression": "Apache-2.0",
+        "review_required": false
+      },
+      "egress": "none",
+      "inputs": [
+        {
+          "path": "internal/detection/cloud_secrets.go",
+          "sha256": "6697a15c27b0530b5c2ada5ea3c63b6756255a6b0dcd91918c1afee80712dfe4"
+        },
+        {
+          "path": "internal/detection/detection.go",
+          "sha256": "a468b0f4111d72b4858eca40e842a591111cce7b32260f4c98c1e18c78dba697"
+        },
+        {
+          "path": "internal/detection/identifiers.go",
+          "sha256": "0b36780438d93007378eb6dd384769de42d75f0a70efd1f276233606f6ef5aae"
+        },
+        {
+          "path": "internal/detection/network_ids.go",
+          "sha256": "0c5836c4f40ff6d3e505532198611e686f06bc80e1120c4bb38f45fdec164498"
+        },
+        {
+          "path": "internal/detection/recognizers.go",
+          "sha256": "749555fca88a553663faf83aa4504e388b4b7ac46f94439ac983fb1db9821b67"
+        },
+        {
+          "path": "internal/detection/secrets.go",
+          "sha256": "e0eca53fccd09c7fa5ee8229c46ad40c3af5f9a3e8560a750d439193f48f1083"
+        },
+        {
+          "path": "internal/detection/taxonomy_recognizers.go",
+          "sha256": "dd1c284087919c5c2222d56761b91693fd102bfb07bf437c079706b203a383e6"
+        }
+      ]
+    },
+    {
+      "id": "presidio",
+      "kind": "hybrid_ner",
+      "enabled": false,
+      "version": "unqualified",
+      "runtime": "cluster-private-service",
+      "source": "https://github.com/microsoft/presidio",
+      "license": {
+        "expression": "MIT",
+        "review_required": false
+      },
+      "egress": "none",
+      "inputs": [
+        {
+          "path": "deploy/helm/sddp/templates/presidio.yaml",
+          "sha256": "7a691f3f42c161c717d17aec3791555021b00fb4e89b42c154f3303bf1dbb6da"
+        },
+        {
+          "path": "internal/detection/presidio/presidio.go",
+          "sha256": "db0aa947f97874b66af00eba2a94750ecc686445a51c18ae849d13f528e35bde"
+        }
+      ],
+      "limitations": [
+        "disabled in the production-v1 profile until an analyzer image and NLP model are digest-pinned and qualified"
+      ]
+    },
+    {
+      "id": "redaction_validator",
+      "kind": "redaction_validator",
+      "enabled": false,
+      "version": "qwen2.5:7b-instruct|redaction-validator:v2",
+      "runtime": "remediation-executor-source-local-ollama-0.32.0",
+      "source": "repository://internal/redaction/llmvalidator",
+      "license": {
+        "expression": "Apache-2.0",
+        "review_required": false
+      },
+      "egress": "none",
+      "inputs": [
+        {
+          "path": "internal/redaction/llmvalidator/validator.go",
+          "sha256": "61a51545f1d4346e8d23be86a9f80edd109ac962bd3b7a59428804e5d8218800"
+        },
+        {
+          "path": "internal/redaction/profile.go",
+          "sha256": "a29ab8b8a2ec007393dae41e152972b58ebe662f7023b098a5bfe1eaef576a24"
+        },
+        {
+          "path": "internal/remediation/render.go",
+          "sha256": "822ab37a1d9ecd33aeb078c1de8849225745bdd971434af56b27b8305bf96156"
+        }
+      ],
+      "limitations": [
+        "disabled in the production-v1 profile; deterministic plan application remains authoritative",
+        "when enabled, the executor endpoint must terminate at a loopback, private-IP, Docker host, or Kubernetes-local model service; hosted and generic OpenAI-compatible APIs are rejected at startup"
+      ]
+    }
+  ],
+  "quality_policy": {
+    "status": "not_qualified",
+    "minimum_approvals": 2,
+    "allowed_corpus_origins": [
+      "consented",
+      "properly_licensed",
+      "synthetic"
+    ],
+    "required_metrics": [
+      "clinical_data_preservation",
+      "confidence_intervals",
+      "document_residual_phi",
+      "false_positives_per_volume",
+      "language_document_slices",
+      "per_family_f1",
+      "per_family_precision",
+      "per_family_recall",
+      "prompt_injection_failures",
+      "unsupported_coverage"
+    ],
+    "production_images_required": true,
+    "persist_raw_values": false
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "version": "v0.1.0-develop.1",
+  "source": {
+    "repository": "rapticore/ore_heaphound",
+    "commit": "2ff679f86dafaeddd700f522b73fd8427a133db8"
+  },
+  "images": [
+    {
+      "component": "application",
+      "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound",
+      "digest": "sha256:2d057ac8fc2ea458f1a0d19e3c24de9cd7d5c00f1e7cfc1dcba61ab122731898",
+      "signature": "sigstore-keyless",
+      "attestations": [
+        "slsa-provenance",
+        "spdx-sbom"
+      ]
+    },
+    {
+      "component": "extraction",
+      "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound-tika",
+      "digest": "sha256:74eaabdf7eefd39f389d16a0a0f4de93b1a1488e31484e335d7bf9c3e36c05bf",
+      "signature": "sigstore-keyless",
+      "attestations": [
+        "slsa-provenance",
+        "spdx-sbom"
+      ]
+    }
+  ],
+  "artifacts": {
+    "helm_charts": [
+      {
+        "name": "sddp-0.1.0-develop.1.tgz",
+        "sha256": "94660076f9e39e28f1ffa606e22b813efe11d55b2e0f23316ed031987a1ea0cd"
+      },
+      {
+        "name": "sddp-admission-0.1.0-develop.1.tgz",
+        "sha256": "f9d12238e6ea217fbd785189a97224c4eed914fc2b27365717bc1c36219a19ea"
+      },
+      {
+        "name": "sddp-execution-plane-0.1.0-develop.1.tgz",
+        "sha256": "a16ff93a82b86465dcba7453cbc95264ec989ca061152ccc3330b528c76a5437"
+      }
+    ],
+    "capability_catalog": {
+      "name": "catalog.json",
+      "sha256": "44a356c5aef2c42de9987746d671cb93de4b15beb6b3903c07eebc4bf56903ac",
+      "schema_version": 1
+    },
+    "detector_bundle": {
+      "name": "detector-bundle-manifest.json",
+      "sha256": "04d4fd9ececc407729cd98ad0def54081adb7c988d9f95d3a8b17dbe90767a82",
+      "schema_version": 1,
+      "profile_id": "production-v1",
+      "quality_status": "not_qualified"
+    }
+  },
+  "database": {
+    "first_migration": "0001_core_asset_and_work_model.sql",
+    "last_migration": "0059_work_unit_autoscaling_index.sql",
+    "migration_count": 59
+  },
+  "build": {
+    "system": "github-actions",
+    "workflow_run": "30123328284/1",
+    "manifest_signature": "sigstore-keyless-bundle"
+  },
+  "qualification": {
+    "required": true,
+    "status": "not_qualified",
+    "reason": "release artifacts require a separate target-environment qualification record"
+  }
+}

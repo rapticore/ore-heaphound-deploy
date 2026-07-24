@@ -197,6 +197,8 @@ Replace the remaining `REPLACE_*` deployment coordinates in
 
 ```sh
 helm template ore-heaphound "charts/sddp-admission-${RELEASE_VERSION}.tgz" \
+  --namespace sddp \
+  -f values/admission.yaml \
   >/tmp/admission.yaml
 helm template ore-heaphound "charts/sddp-${RELEASE_VERSION}.tgz" \
   --namespace sddp \
@@ -204,7 +206,8 @@ helm template ore-heaphound "charts/sddp-${RELEASE_VERSION}.tgz" \
 
 helm upgrade --install ore-heaphound-admission \
   "charts/sddp-admission-${RELEASE_VERSION}.tgz" \
-  --namespace sddp --create-namespace
+  --namespace sddp --create-namespace \
+  -f values/admission.yaml
 helm upgrade --install ore-heaphound "charts/sddp-${RELEASE_VERSION}.tgz" \
   --namespace sddp \
   -f values/central-eks.yaml \

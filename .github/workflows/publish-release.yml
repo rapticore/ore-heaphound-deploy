@@ -1,0 +1,58 @@
+name: publish-customer-release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'rapticore/ore-heaphound-deploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Validate and publish committed release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || {
+            echo "release tag must be semantic without build metadata" >&2
+            exit 1
+          }
+          test "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag || {
+            echo "customer release tags must be annotated" >&2
+            exit 1
+          }
+          version="${GITHUB_REF_NAME#v}"
+          asset_dir="release-assets/${GITHUB_REF_NAME}"
+          archive="${asset_dir}/ore-heaphound-deploy-${version}.tar.gz"
+          for required in \
+            SELF_HOSTED.md release-manifest.json release-manifest.sigstore.json \
+            detector-bundle-manifest.json detector-bundle-manifest.sha256 \
+            "$archive" "${archive}.sha256" "${archive}.sigstore.json"; do
+            test -s "$required" || {
+              echo "required customer release asset is missing: $required" >&2
+              exit 1
+            }
+          done
+          (
+            cd "$asset_dir"
+            sha256sum --check "ore-heaphound-deploy-${version}.tar.gz.sha256"
+          )
+          release_flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Ore Heaphound ${GITHUB_REF_NAME}" \
+            --notes-file SELF_HOSTED.md \
+            "${release_flags[@]}" \
+            release-manifest.json release-manifest.sigstore.json \
+            detector-bundle-manifest.json detector-bundle-manifest.sha256 \
+            "$archive" "${archive}.sha256" "${archive}.sigstore.json"

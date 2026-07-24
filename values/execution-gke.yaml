@@ -2,8 +2,8 @@ provider: gcp
 production: true
 
 image:
-  repository: REPLACE_APPLICATION_IMAGE
-  digest: REPLACE_APPLICATION_DIGEST
+  repository: public.ecr.aws/n7r3j2c0/ore-heaphound
+  digest: sha256:2d057ac8fc2ea458f1a0d19e3c24de9cd7d5c00f1e7cfc1dcba61ab122731898
 
 gateway:
   target: REPLACE_GATEWAY_HOST:443
@@ -12,9 +12,9 @@ gateway:
 
 pool:
   id: gcp-prod
-  buildDigest: REPLACE_APPLICATION_DIGEST
-  detectorBundle: REPLACE_DETECTOR_BUNDLE
-  detectorManifestDigest: REPLACE_DETECTOR_MANIFEST_DIGEST
+  buildDigest: sha256:2d057ac8fc2ea458f1a0d19e3c24de9cd7d5c00f1e7cfc1dcba61ab122731898
+  detectorBundle: native:builtin-v6|kingfisher:1.106.0|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  detectorManifestDigest: sha256:04d4fd9ececc407729cd98ad0def54081adb7c988d9f95d3a8b17dbe90767a82
 
 autoscaling:
   enabled: true
@@ -31,21 +31,21 @@ extraction:
   managedTika:
     enabled: true
     image:
-      repository: REPLACE_EXTRACTION_IMAGE
-      digest: REPLACE_EXTRACTION_DIGEST
+      repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
+      digest: sha256:74eaabdf7eefd39f389d16a0a0f4de93b1a1488e31484e335d7bf9c3e36c05bf
 
 detection:
   contextual:
     enabled: true
     local: true
-    model: REPLACE_MODEL
-    modelDigest: REPLACE_MODEL_DIGEST
-    version: REPLACE_CONTEXTUAL_VERSION
+    model: qwen2.5:7b-instruct
+    modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+    version: qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
 
 localModels:
   ollama:
     enabled: true
-    model: REPLACE_MODEL
+    model: qwen2.5:7b-instruct
     existingClaim: sddp-models-rox
     acceleratorResources: { nvidia.com/gpu: 1 }
     autoscaling: { enabled: true }
