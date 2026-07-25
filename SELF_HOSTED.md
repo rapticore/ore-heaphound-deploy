@@ -135,19 +135,38 @@ alias and must not be placed in production values.
 ## 2. Build the central AWS infrastructure
 
 Authenticate to the customer AWS account, copy the example variables, and use
-an encrypted remote state backend:
+an encrypted remote state backend. Use Terraform exactly `1.15.8` and AWS CLI
+v2.7.0 or newer; the exec credential plugins obtain a fresh EKS token only
+after the cluster is ready.
 
 ```sh
+test "$(terraform version -json | jq -r .terraform_version)" = "1.15.8"
+
 cd infra/aws-central
 cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan -out=tfplan
+terraform show -json tfplan >private-tfplan.json
+
+# Do not print matching values. Any match makes the plan unsafe to apply.
+jq -e \
+  '[.. | strings | select(startswith("k8s-aws-v1."))] | length == 0' \
+  private-tfplan.json >/dev/null
+jq -e \
+  '[.. | objects | .address? | strings |
+    select(startswith("data.aws_eks_cluster_auth."))] | length == 0' \
+  private-tfplan.json >/dev/null
+
 terraform apply tfplan
 aws eks update-kubeconfig \
   --region "$(terraform output -raw region 2>/dev/null || echo us-west-2)" \
   --name "$(terraform output -raw cluster_name)"
 cd ../..
 ```
+
+Keep the binary and JSON plans private until apply completes, then remove them.
+Neither file is qualification evidence; retain a sanitized plan summary and
+its SHA-256 digest instead.
 
 The stack creates:
 

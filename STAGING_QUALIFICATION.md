@@ -1482,10 +1482,10 @@ client secret or storage access key.
 Run from a customer-controlled runner with:
 
 - Bash, Git, `jq`, `curl`, and a SHA-256 utility;
-- AWS CLI authenticated through customer SSO;
+- AWS CLI v2.7.0 or newer, authenticated through customer SSO;
 - Google Cloud CLI using Application Default Credentials when GCP is used;
 - Azure CLI authenticated to the confirmed subscription when AKS is used;
-- Terraform `>= 1.5.7`;
+- Terraform exactly `1.15.8`, matching release CI;
 - Helm 3, `kubectl`, and Cosign; and
 - network access to GitHub, ECR Public, the Kubernetes APIs, and Sigstore
   transparency services.
@@ -1632,6 +1632,19 @@ terraform -chdir=infra/aws-central plan \
   -var-file=/secure/customer-config/aws-central/terraform.tfvars \
   -out=tfplan
 terraform -chdir=infra/aws-central show tfplan
+terraform -chdir=infra/aws-central show -json tfplan >private-tfplan.json
+
+# Fail closed without printing any matching value. The released providers must
+# obtain EKS credentials through `aws eks get-token` after the cluster is ready.
+jq -e '
+  [.. | strings | select(startswith("k8s-aws-v1."))] | length == 0
+' private-tfplan.json >/dev/null
+jq -e '
+  [
+    .. | objects | .address? | strings
+    | select(startswith("data.aws_eks_cluster_auth."))
+  ] | length == 0
+' private-tfplan.json >/dev/null
 ```
 
 Have a second person review the plan. Confirm:
@@ -1644,8 +1657,9 @@ Have a second person review the plan. Confirm:
 - S3 versioning, Object Lock, KMS, and at least 365-day retention;
 - EFS encryption;
 - `scan-spot` and `llm-spot` pools with scale-to-zero capacity;
-- lower-priority on-demand fallback only if explicitly approved; and
-- no unexpected public endpoint or broad IAM wildcard.
+- lower-priority on-demand fallback only if explicitly approved;
+- no unexpected public endpoint or broad IAM wildcard; and
+- no EKS bearer token or `aws_eks_cluster_auth` value in the saved plan.
 
 Apply only the reviewed plan:
 
@@ -1662,8 +1676,9 @@ kubectl get storageclass
 kubectl get crd | grep -E 'scaledobjects|nodepools'
 ```
 
-Do not retain `tfplan` as qualification evidence; it can contain sensitive
-coordinates. Produce a separate sanitized infrastructure summary instead.
+Do not retain `tfplan` or `private-tfplan.json` as qualification evidence; they
+can contain sensitive coordinates. Produce a separate sanitized infrastructure
+summary instead.
 
 ## 6. Install prerequisites, model storage, and secrets
 

@@ -4,6 +4,7 @@
 *.tfstate.*
 *.tfplan
 tfplan
+private-tfplan.json
 terraform.tfvars
 *.auto.tfvars
 
