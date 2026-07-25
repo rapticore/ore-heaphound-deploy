@@ -572,9 +572,15 @@ resource "aws_security_group" "efs" {
 }
 
 resource "aws_efs_mount_target" "models" {
-  for_each = toset(module.vpc.private_subnets)
+  # Resource IDs are unknown until apply and therefore cannot be for_each
+  # keys. Keep the instance keys plan-time stable and use the computed subnet
+  # IDs only as resource attributes.
+  for_each = {
+    for index in range(length(local.private_subnets)) :
+    tostring(index) => index
+  }
 
   file_system_id  = aws_efs_file_system.models.id
-  subnet_id       = each.value
+  subnet_id       = module.vpc.private_subnets[each.value]
   security_groups = [aws_security_group.efs.id]
 }

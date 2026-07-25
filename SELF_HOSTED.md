@@ -84,15 +84,27 @@ test "$EXTRACTION_IMAGE" = \
   "$(jq -r '.images[] | select(.component=="extraction") | .reference+"@"+.digest' release-manifest.json)"
 ```
 
-Verify the application image before use:
+Verify both signed top-level image indexes before use:
 
 ```sh
-cosign verify \
-  --certificate-identity \
-    "https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/vX.Y.Z" \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-    "$APPLICATION_IMAGE"
+for image in "$APPLICATION_IMAGE" "$EXTRACTION_IMAGE"; do
+  cosign verify \
+    --certificate-identity \
+      "https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/vX.Y.Z" \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    "$image"
+done
 ```
+
+Then verify the per-platform BuildKit provenance and SPDX SBOMs using the
+parent-index algorithm in phase C of
+[STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md). BuildKit represents these
+as `unknown/unknown` attestation-manifest siblings in the signed
+multi-platform index, associated to child platform digests by
+`vnd.docker.reference.digest`. A child-digest referrers lookup or
+`cosign verify-attestation` alone can return no results and must not be used to
+declare these attestations absent. Registry throttling, authorization errors,
+timeouts, and DNS failures are access failures, not missing-artifact evidence.
 
 Verify every OCI chart digest, then pull the versioned packages and compare
 their bytes with the signed release manifest:
@@ -310,10 +322,22 @@ capacity fails.
   chart's bounded pre-upgrade Job. Roll back application workloads only to a
   release compatible with the applied database migration.
 - Never delete or recreate the Object Lock bucket as part of an application
-  uninstall.
+  uninstall. Use phase I of
+  [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md) for the independently
+  authorized operational teardown and later post-retention purge.
 - Before enabling production, run a 100 GB synthetic scan and interrupt worker,
   GPU, gateway, and network capacity. Work must be reclaimed without lost or
   duplicate findings.
 
 No Rapticore-hosted API, database, worker, telemetry endpoint, or customer data
 path is required by this deployment.
+
+For a representative customer-owned staging install, live failure testing, and
+the signed 12-receipt qualification process, continue with
+[STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md). To have an approved
+terminal-capable LLM agent operate that walkthrough, give it the runbook and
+let it conduct the guided intake. The agent uses
+[AGENT_DEPLOYMENT_SPEC.example.yaml](AGENT_DEPLOYMENT_SPEC.example.yaml) as an
+internal schema and generates collision-checked defaults; the customer does
+not edit YAML. Decommission remains a separate, explicitly approved interview
+and phase I operation.

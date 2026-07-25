@@ -1,0 +1,160 @@
+# Agent-generated, non-secret execution record for an LLM-operated deployment.
+# The customer is not expected to complete this file. The agent asks a short
+# guided set of questions, discovers safe values from authenticated read-only
+# APIs, resolves every auto/null field, and presents the result for approval.
+# Credentials and secret values must never be placed in this file.
+
+schema_version: 2
+deployment_id: auto
+operation: deploy # deploy or decommission
+deployment_action: new # new or resume; ignored for decommission
+mode: develop_rehearsal # develop_rehearsal or stable_qualification
+
+release:
+  tag: auto_latest_develop
+  public_repository: https://github.com/rapticore/ore-heaphound-deploy
+  expected_source_repository: rapticore/ore_heaphound
+
+naming:
+  strategy: generated # generated, default_if_available, or customer_supplied
+  prefix: ore-heaphound
+  random_suffix_length: 8
+
+authorization:
+  # The agent records explicit customer answers here. It must never infer or
+  # self-grant authorization. Read-only discovery is allowed after the
+  # customer starts the guided intake.
+  provision_infrastructure: false
+  install_or_upgrade_workloads: false
+  run_synthetic_scans: false
+  run_fault_injection: false
+  run_synthetic_remediation: false
+  decommission_ephemeral_resources: false
+  # Decommission is a separate destructive operation. Deployment approval does
+  # not authorize any of the following actions.
+  decommission_installation: false
+  override_deletion_protection: false
+  delete_deployment_owned_synthetic_data: false
+  delete_final_rds_snapshot_after_expiry: false
+  delete_retained_custody_after_expiry: false
+  delete_terraform_state_after_verification: false
+  maximum_estimated_monthly_cost_usd: 0
+  approved_change_reference: null
+  approved_by: []
+
+aws:
+  # The agent discovers the active short-lived identity, shows it to the
+  # customer, and records it only after confirmation.
+  profile: auto_authenticated
+  expected_account_id: null
+  expected_installer_role_name: null
+  region: us-west-2
+  administrator_cidrs: []
+  cluster_name: auto
+  anchor_bucket: auto
+  synthetic_source_bucket: auto
+  synthetic_source_kms_key_arn: auto
+  enable_on_demand_fallback: true
+  terraform_state:
+    bucket: auto
+    key: auto
+    region: us-west-2
+    kms_key_arn: auto
+    lock_table: auto
+
+gcp:
+  enabled: false
+  # When selected during intake, the agent discovers the authenticated project
+  # and asks the customer to confirm it.
+  project_id: null
+  region: us-central1
+  synthetic_source_bucket: auto
+  inventory_service_account: auto
+  reader_service_account: auto
+  aws_workload_identity_provider: auto
+  deploy_remote_gke_worker: false
+
+azure:
+  enabled: false
+  # When selected, the agent discovers and confirms the active tenant and
+  # subscription. Existing shared networks/storage remain customer-owned.
+  tenant_id: null
+  subscription_id: null
+  location: westus2
+  resource_group_name: auto
+  subnet_id: null
+  source_storage_scope_ids: []
+  deploy_remote_aks_worker: false
+
+network:
+  web_access: local_port_forward # local_port_forward or internal_dns
+  web_hostname: null
+  worker_gateway_hostname: null
+  worker_gateway_source_cidrs: []
+
+kubernetes:
+  namespace: sddp
+  kyverno_minimum_version: "1.18.0"
+  customer_values_file: auto_private_workdir
+
+model:
+  license_accepted: false
+  model_reference: null
+  model_sha256: null
+  prompt_version: null
+  # Reference a customer-owned object or approved internal registry. The agent
+  # may use it only when license_accepted is true.
+  staging_source_reference: null
+
+secrets:
+  # The agent proposes dedicated generated references or records existing
+  # customer references. It never prints or stores their secret values here.
+  delivery_method: auto
+  controller_namespace: null
+  operator_secret_reference: auto
+  web_tls_secret_reference: null
+  gateway_tls_secret_reference: null
+
+synthetic_test:
+  corpus_id: auto
+  corpus_revision: auto
+  expected_inventory_sha256: auto_after_generation
+  target_size_gib: 100
+
+qualification:
+  target_id: auto
+  evidence_retention_days: 365
+  input_bucket: auto
+  input_prefix: ore-heaphound/qualification-input
+  archive_bucket: auto
+  archive_prefix: ore-heaphound/qualification
+  finalization_requested: false
+
+decommission:
+  # Keep this block inactive for deployment. During a removal interview, the
+  # agent records the prior readiness report and a new approval that names the
+  # exact account, project, cluster, and state key.
+  mode: operational # operational or full_after_retention
+  deployment_readiness_report: null
+  approved_change_reference: null
+  approved_by: []
+  require_final_rds_snapshot: true
+  expected_final_rds_snapshot_identifier: auto
+  report_destination: null
+
+intake:
+  generated_by_agent: true
+  customer_answers_recorded: false
+  resolved_values_approved: false
+  resolved_specification_sha256: null
+
+approvals:
+  # Each approved entry records approver, timestamp, displayed summary digest,
+  # saved plan digest when applicable, and the exact approved action.
+  resolved_inputs: null
+  infrastructure_plan: null
+  workload_install: null
+  synthetic_scan: null
+  fault_injection: null
+  synthetic_remediation: null
+  decommission: null

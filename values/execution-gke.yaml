@@ -3,7 +3,7 @@ production: true
 
 image:
   repository: public.ecr.aws/n7r3j2c0/ore-heaphound
-  digest: sha256:2d057ac8fc2ea458f1a0d19e3c24de9cd7d5c00f1e7cfc1dcba61ab122731898
+  digest: sha256:18c92678591105661dcca7a9049533a8870a71b3add7c39608c0ce5067ef0b5c
 
 gateway:
   target: REPLACE_GATEWAY_HOST:443
@@ -12,7 +12,7 @@ gateway:
 
 pool:
   id: gcp-prod
-  buildDigest: sha256:2d057ac8fc2ea458f1a0d19e3c24de9cd7d5c00f1e7cfc1dcba61ab122731898
+  buildDigest: sha256:18c92678591105661dcca7a9049533a8870a71b3add7c39608c0ce5067ef0b5c
   detectorBundle: native:builtin-v6|kingfisher:1.106.0|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
   detectorManifestDigest: sha256:04d4fd9ececc407729cd98ad0def54081adb7c988d9f95d3a8b17dbe90767a82
 
@@ -32,7 +32,7 @@ extraction:
     enabled: true
     image:
       repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-      digest: sha256:74eaabdf7eefd39f389d16a0a0f4de93b1a1488e31484e335d7bf9c3e36c05bf
+      digest: sha256:ef12b7c0d09139f67cec5133be2e801c39aa309900fe662f3611ec5dcc605fc5
 
 detection:
   contextual:
