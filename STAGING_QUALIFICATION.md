@@ -21,6 +21,12 @@ produce a complete empty-state plan because EFS mount targets use
 provider-generated subnet IDs as instance keys. Preserve that tag and its
 reports as audit history.
 
+Do not deploy `v0.1.0-develop.4`. Its AWS central plan gives the VPC module and
+the root module separate resource addresses for the same named RDS DB subnet
+group. Preserve that tag, the apply-forbidden plan, and its reports as audit
+history. Use a newer immutable prerelease with exactly one DB subnet-group
+owner.
+
 Use only a newer immutable develop prerelease whose release workflow passed the
 Terraform deployment-kit gate. That corrected prerelease is suitable for
 rehearsing this runbook, but it cannot be finalized as qualified:

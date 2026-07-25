@@ -4,4 +4,4 @@ policy:
   repositories:
     - public.ecr.aws/n7r3j2c0/ore-heaphound
     - public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.4
+  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.5

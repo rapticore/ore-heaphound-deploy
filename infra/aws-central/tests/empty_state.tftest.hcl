@@ -82,4 +82,14 @@ run "empty_state_plan" {
     ])
     error_message = "The empty-state plan must create one EFS mount target for each plan-time-known private subnet."
   }
+
+  assert {
+    condition     = module.vpc.database_subnet_group_name == var.name
+    error_message = "The VPC module must be the single owner of the named RDS DB subnet group."
+  }
+
+  assert {
+    condition     = aws_db_instance.postgres.db_subnet_group_name == module.vpc.database_subnet_group_name
+    error_message = "RDS must consume the DB subnet group owned by the VPC module."
+  }
 }

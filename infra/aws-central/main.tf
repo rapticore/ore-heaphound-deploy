@@ -54,6 +54,8 @@ module "vpc" {
   database_subnets = local.database_subnets
   public_subnets   = local.public_subnets
 
+  create_database_subnet_group = true
+
   enable_nat_gateway     = true
   one_nat_gateway_per_az = true
   single_nat_gateway     = false
@@ -473,11 +475,6 @@ resource "aws_security_group" "database" {
   }
 }
 
-resource "aws_db_subnet_group" "this" {
-  name       = var.name
-  subnet_ids = module.vpc.database_subnets
-}
-
 resource "aws_db_instance" "postgres" {
   identifier = var.name
 
@@ -494,7 +491,7 @@ resource "aws_db_instance" "postgres" {
   manage_master_user_password = true
   multi_az                    = true
   publicly_accessible         = false
-  db_subnet_group_name        = aws_db_subnet_group.this.name
+  db_subnet_group_name        = module.vpc.database_subnet_group_name
   vpc_security_group_ids      = [aws_security_group.database.id]
   backup_retention_period     = 35
   deletion_protection         = true
