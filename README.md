@@ -22,7 +22,10 @@ plugin, six EKS managed add-ons, and the evaluated EKS AMI from
 bootstrap state is the sole owner of the encrypted empty operator-secret
 object; AWS central performs metadata-only lookup and creates the
 least-privilege synchronization path. Secret values remain outside Terraform
-and are populated with the released non-echoing helper. Existing develop
+and are populated with the released non-echoing helper. The exact model,
+license layer, staging image, and content digests are locked in
+[model.lock.json](model.lock.json); the released staging helper publishes an
+atomically verified store that runtime pods mount read-only. Existing develop
 rehearsals should normally use the runbook's saved-plan reconciliation path,
 not decommission and recreation.
 

@@ -4,14 +4,14 @@ production:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:c624dfd2be160b8506740ce3812cae359abb47c91da626c23708e5de71248733
+  digest: sha256:2d72dbb16c3a452da46f91d377d684e6e5f0bfa49e34b54fcbaba45f120c37b2
 
 extraction:
   enabled: true
   denyEgress: true
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:8e6b9dabbca87f89e955696697f78d2bfa159c149251d51f57884a069bdbae8e
+    digest: sha256:9ebfae6528aabc06bc5ac793b9d3689cfd2835a1d375e03c2e0822a50726ca8e
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -75,12 +75,16 @@ localModels:
   ollama:
     enabled: true
     models: [qwen2.5:7b-instruct]
-    acceptModelLicenses: true
+    # The released file is intentionally fail-closed. Set true only in the
+    # customer-approved private overlay after recording exact license acceptance.
+    acceptModelLicenses: false
     modelPull: { enabled: false }
     autoscaling: { enabled: true }
     persistence:
       enabled: true
       existingClaim: sddp-models-rox
+      readOnly: true
+      subPath: store
       accessModes: [ReadWriteMany]
     acceleratorResources: { nvidia.com/gpu: 1 }
     nodeSelector: { rapticore.io/workload: llm }

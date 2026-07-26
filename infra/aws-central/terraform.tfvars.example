@@ -14,6 +14,12 @@ source_bucket_arns = [
 # Spot is preferred. Set false only when jobs should wait indefinitely for Spot.
 enable_on_demand_fallback = true
 
+# Three system nodes provide enough requested CPU for a concurrent application
+# rollout. Change these only with a reviewed capacity calculation.
+system_node_min_size     = 3
+system_node_desired_size = 3
+system_node_max_size     = 6
+
 # Infrastructure tags are identity, not mutable software-version metadata.
 # During reconciliation copy the exact existing tag map from the approved
 # state/configuration. Do not replace an existing ReleaseTag with the new tag.

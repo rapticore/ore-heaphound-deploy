@@ -1,0 +1,188 @@
+# One-time, credentialless model staging bundle. Apply only through the
+# released stage-model-eks.sh helper after exact license and mutation approval.
+# The helper deletes these temporary resources when the Job finishes.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sddp-model-stager
+  namespace: sddp
+  labels:
+    app.kubernetes.io/name: sddp-model-stager
+    app.kubernetes.io/part-of: ore-heaphound
+automountServiceAccountToken: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sddp-model-stager
+  namespace: sddp
+  labels:
+    app.kubernetes.io/name: sddp-model-stager
+    app.kubernetes.io/part-of: ore-heaphound
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: sddp-model-stager
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    # Standard Kubernetes NetworkPolicy cannot select an FQDN. This temporary
+    # Job therefore permits public HTTPS while excluding private, loopback,
+    # link-local, multicast, and reserved IPv4 ranges. Exact content digests,
+    # a no-credential ServiceAccount, a single-use Job, and immediate resource
+    # deletion provide the remaining boundary.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 100.64.0.0/10
+              - 127.0.0.0/8
+              - 169.254.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 224.0.0.0/4
+              - 240.0.0.0/4
+      ports:
+        - { protocol: TCP, port: 443 }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sddp-model-stager
+  namespace: sddp
+  labels:
+    app.kubernetes.io/name: sddp-model-stager
+    app.kubernetes.io/part-of: ore-heaphound
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sddp-model-stager
+        app.kubernetes.io/part-of: ore-heaphound
+    spec:
+      restartPolicy: Never
+      serviceAccountName: sddp-model-stager
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: stage
+          image: ollama/ollama@sha256:57f573b47f1f71ebb445789f279fe3e596a8beab182f7cf486db9205bad87c5a
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              readonly STAGE=/models/.ore-heaphound-staging
+              readonly STORE=/models/store
+              readonly MANIFEST="${STAGE}/manifests/registry.ollama.ai/library/qwen2.5/7b-instruct"
+              readonly MODEL_BLOB="${STAGE}/blobs/sha256-2bada8a7450677000f678be90653b85d364de7db25eb5ea54136ada5f3933730"
+              readonly LICENSE_BLOB="${STAGE}/blobs/sha256-832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e"
+              success=false
+              server_pid=""
+
+              cleanup() {
+                rc=$?
+                trap - EXIT
+                if [ -n "${server_pid}" ]; then
+                  kill "${server_pid}" 2>/dev/null || true
+                  wait "${server_pid}" 2>/dev/null || true
+                fi
+                if [ "${success}" != true ]; then
+                  rm -rf -- "${STAGE}"
+                fi
+                exit "${rc}"
+              }
+              trap cleanup EXIT
+              trap 'exit 130' HUP INT TERM
+
+              if [ -n "$(find /models -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+                echo "Refusing to stage into a non-empty model claim." >&2
+                exit 1
+              fi
+
+              mkdir -p "${STAGE}"
+              OLLAMA_MODELS="${STAGE}" ollama serve >/tmp/ollama-stager.log 2>&1 &
+              server_pid=$!
+
+              ready=false
+              for _ in $(seq 1 120); do
+                if OLLAMA_MODELS="${STAGE}" ollama list >/dev/null 2>&1; then
+                  ready=true
+                  break
+                fi
+                sleep 1
+              done
+              [ "${ready}" = true ] || {
+                echo "Local staging server did not become ready." >&2
+                exit 1
+              }
+
+              OLLAMA_MODELS="${STAGE}" ollama pull qwen2.5:7b-instruct
+
+              [ -f "${MANIFEST}" ] || {
+                echo "Expected registry manifest is absent." >&2
+                exit 1
+              }
+              echo "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e  ${MANIFEST}" |
+                sha256sum -c -
+              echo "2bada8a7450677000f678be90653b85d364de7db25eb5ea54136ada5f3933730  ${MODEL_BLOB}" |
+                sha256sum -c -
+              [ "$(wc -c <"${MODEL_BLOB}" | tr -d ' ')" = "4683073952" ] || {
+                echo "Model layer size does not match the release lock." >&2
+                exit 1
+              }
+              echo "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e  ${LICENSE_BLOB}" |
+                sha256sum -c -
+              [ "$(wc -c <"${LICENSE_BLOB}" | tr -d ' ')" = "11343" ] || {
+                echo "License layer size does not match the release lock." >&2
+                exit 1
+              }
+              grep -q 'sha256:2bada8a7450677000f678be90653b85d364de7db25eb5ea54136ada5f3933730' "${MANIFEST}"
+              grep -q 'sha256:832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e' "${MANIFEST}"
+
+              kill "${server_pid}" 2>/dev/null || true
+              wait "${server_pid}" 2>/dev/null || true
+              server_pid=""
+              mv -- "${STAGE}" "${STORE}"
+              success=true
+              echo "MODEL_STAGING_VERIFIED"
+          env:
+            - { name: HOME, value: /tmp }
+            - { name: OLLAMA_HOST, value: "127.0.0.1:11434" }
+            - { name: OLLAMA_NO_CLOUD, value: "1" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2", memory: "4Gi" }
+          volumeMounts:
+            - { name: models, mountPath: /models }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: sddp-models-rox
+        - name: tmp
+          emptyDir: { sizeLimit: 2Gi }

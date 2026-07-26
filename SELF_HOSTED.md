@@ -177,7 +177,8 @@ its SHA-256 digest instead.
 
 The stack creates:
 
-- private EKS worker subnets and a stable two-node system pool;
+- private EKS worker subnets and a stable three-node system pool sized for a
+  concurrent application rollout;
 - Karpenter CPU and GPU Spot pools plus optional on-demand fallback pools;
 - encrypted Multi-AZ PostgreSQL with 35-day PITR and deletion protection;
 - a KMS-encrypted S3 Object Lock bucket;
@@ -207,7 +208,7 @@ The prerequisite/bootstrap state is the sole owner of the empty encrypted
 operator object. AWS central references its metadata but never imports,
 re-keys, deletes, or reads its value. It creates the namespace and
 external-secret binding. Populate the object without exposing values to the
-terminal or Terraform, then create the model claim:
+terminal or Terraform.
 
 ```sh
 customer-deploy/scripts/populate-operator-secret.sh \
@@ -222,15 +223,34 @@ kubectl -n sddp wait \
   --for=condition=Ready externalsecret/ore-heaphound-operator \
   --timeout=5m
 
-sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
-  manifests/model-pvc-eks.yaml | kubectl apply -f -
 ```
 
-Copy the exact model files named in `detector-bundle-manifest.json` into the
-claim using a temporary, customer-reviewed staging Job. The Job may download
-from an approved upstream registry or copy from customer object storage. Delete
-the Job and deny runtime egress after staging. Rapticore does not distribute
+After the customer explicitly accepts the exact license in `model.lock.json`,
+resolve the EFS identifier into a private temporary manifest and run the
+released helper:
+
+```sh
+sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
+  manifests/model-pvc-eks.yaml > /secure/customer-config/model-pvc.resolved.yaml
+
+export ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED=true
+export ORE_HEAPHOUND_EXPECTED_CONTEXT="$(kubectl config current-context)"
+scripts/stage-model-eks.sh \
+  /secure/customer-config/model-pvc.resolved.yaml
+unset ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED ORE_HEAPHOUND_EXPECTED_CONTEXT
+```
+
+The helper refuses unresolved manifests, a context mismatch, or a non-empty
+claim. Its temporary, credentialless Job verifies the registry manifest, model
+layer, license layer, and exact sizes before atomically publishing `store/`.
+Failure removes the partial staging directory; success or failure removes the
+temporary Job, NetworkPolicy, and ServiceAccount. Runtime pods mount only
+`store/`, with `readOnly: true` enforced on both the container mount and PVC
+volume source, and have no model-download egress. Rapticore does not distribute
 model weights.
+
+Keep `acceptModelLicenses: false` in the released values file. Only the
+customer-approved private values overlay may set it to true.
 
 The synchronized `sddp-production-operator-secrets` contains at least:
 

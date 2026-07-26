@@ -1,4 +1,8 @@
 # Replace the EFS fileSystemId with the aws-central output before applying.
+# The one-time staging Job mounts the claim root read-write and atomically
+# publishes the verified store/ directory. Runtime pods mount only store/
+# read-only; ReadWriteMany is a topology capability, not the write-protection
+# mechanism.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:

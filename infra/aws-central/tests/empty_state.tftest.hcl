@@ -108,6 +108,15 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition = (
+      var.system_node_min_size == 3 &&
+      var.system_node_desired_size == 3 &&
+      var.system_node_max_size == 6
+    )
+    error_message = "The release must default to the reviewed 3/3/6 system-node capacity."
+  }
+
+  assert {
     condition     = data.aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
     error_message = "The central plan must reference the exact bootstrap-owned operator secret."
   }

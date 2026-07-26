@@ -142,6 +142,39 @@ variable "enable_on_demand_fallback" {
   default     = true
 }
 
+variable "system_node_min_size" {
+  description = "Minimum on-demand ARM64 system-node count. Three nodes safely accommodate a concurrent application rollout."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.system_node_min_size >= 2 && var.system_node_min_size <= 20 && floor(var.system_node_min_size) == var.system_node_min_size
+    error_message = "system_node_min_size must be a whole number between 2 and 20."
+  }
+}
+
+variable "system_node_desired_size" {
+  description = "Desired on-demand ARM64 system-node count."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.system_node_desired_size >= 2 && var.system_node_desired_size <= 20 && floor(var.system_node_desired_size) == var.system_node_desired_size
+    error_message = "system_node_desired_size must be a whole number between 2 and 20."
+  }
+}
+
+variable "system_node_max_size" {
+  description = "Maximum on-demand ARM64 system-node count."
+  type        = number
+  default     = 6
+
+  validation {
+    condition     = var.system_node_max_size >= 3 && var.system_node_max_size <= 20 && floor(var.system_node_max_size) == var.system_node_max_size
+    error_message = "system_node_max_size must be a whole number between 3 and 20."
+  }
+}
+
 variable "scan_instance_categories" {
   type    = list(string)
   default = ["c", "m", "r"]

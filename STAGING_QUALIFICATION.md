@@ -1790,19 +1790,35 @@ Before Ore Heaphound:
 3. confirm Terraform owns namespace `sddp`, the SecretStore, ExternalSecret,
    metadata-only reference to the bootstrap-owned encrypted operator secret and
    narrow Pod Identity;
-4. create the EFS-backed model claim;
-5. stage the exact approved model weights into the claim through a temporary
-   reviewed Job;
-6. delete the staging Job and deny runtime model-download egress; and
-7. record the model file digest and license decision without retaining model
-   contents in qualification evidence.
+4. verify `model.lock.json` from the signed release and record explicit
+   acceptance of its exact model license;
+5. create the EFS-backed model claim and run the released staging helper;
+6. confirm its credentialless temporary Job verified every locked manifest,
+   layer digest, and size before atomically publishing `store/`;
+7. confirm the helper deleted the Job, NetworkPolicy, and ServiceAccount and
+   that runtime Helm output mounts `store/` read-only at both Kubernetes
+   enforcement points; and
+8. record only the model coordinates and license decision, never model contents.
 
 ```bash
 sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
-  manifests/model-pvc-eks.yaml | kubectl apply -f -
+  manifests/model-pvc-eks.yaml > private/model-pvc.resolved.yaml
 
-kubectl -n sddp get pvc
+export ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED=true
+export ORE_HEAPHOUND_EXPECTED_CONTEXT="$(kubectl config current-context)"
+scripts/stage-model-eks.sh private/model-pvc.resolved.yaml
+unset ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED ORE_HEAPHOUND_EXPECTED_CONTEXT
+
+kubectl -n sddp get pvc sddp-models-rox
 ```
+
+Do not run the helper until the customer separately approves exact model
+license acceptance and the claim/Job mutation. It refuses a non-empty claim; do
+not bypass that guard. Standard NetworkPolicy cannot select an FQDN, so this
+short-lived Job permits only DNS plus public TCP/443 while excluding private,
+loopback, link-local, multicast, and reserved ranges. It has no AWS identity,
+Kubernetes API token, application secret, or other credential. Runtime model
+pods retain deny-all egress.
 
 For a new empty operator secret, use the released helper from the verified
 checkout. Its arguments are non-secret coordinates. It refuses to overwrite an

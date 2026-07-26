@@ -114,9 +114,9 @@ module "eks" {
       instance_types = ["m7g.large"]
       ami_type       = "AL2023_ARM_64_STANDARD"
       capacity_type  = "ON_DEMAND"
-      min_size       = 2
-      desired_size   = 2
-      max_size       = 6
+      min_size       = var.system_node_min_size
+      desired_size   = var.system_node_desired_size
+      max_size       = var.system_node_max_size
       labels = {
         "rapticore.io/workload" = "system"
         "rapticore.io/capacity" = "on-demand"
@@ -138,6 +138,16 @@ module "eks" {
 
 locals {
   oidc_issuer = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+}
+
+check "system_node_scaling" {
+  assert {
+    condition = (
+      var.system_node_min_size <= var.system_node_desired_size &&
+      var.system_node_desired_size <= var.system_node_max_size
+    )
+    error_message = "System node sizing must satisfy min_size <= desired_size <= max_size."
+  }
 }
 
 data "aws_iam_policy_document" "workload_assume" {
