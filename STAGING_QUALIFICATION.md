@@ -28,8 +28,11 @@ history. Use a newer immutable prerelease with exactly one DB subnet-group
 owner.
 
 Use only a newer immutable develop prerelease whose release workflow passed the
-Terraform deployment-kit gate. That corrected prerelease is suitable for
-rehearsing this runbook, but it cannot be finalized as qualified:
+Terraform deployment-kit and pinned-prerequisite gates. Its
+`prerequisites.lock.json` must identify exact Kyverno, External Secrets,
+NVIDIA device-plugin, and EKS AMI releases and verified package hashes. That
+corrected prerelease is suitable for rehearsing this runbook, but it cannot be
+finalized as qualified:
 
 - its detector bundle is intentionally `not_qualified`; and
 - its release manifest correctly says that a separate target-environment
@@ -185,6 +188,50 @@ For a typical first rehearsal, the interaction should be close to:
 The model-license acceptance and exact cost/apply approval still receive their
 own explicit questions. The agent then generates the specification and plan;
 the customer does not answer a field-by-field questionnaire.
+
+### Reconcile an existing develop rehearsal
+
+Do not decommission a healthy customer-owned stack merely because a corrected
+deployment tag is available. Pulling a new tag changes no live resource. The
+recommended path is an in-place, saved-plan reconciliation against the same
+remote state:
+
+1. start in a new private workspace and verify the new immutable release from
+   the beginning; never modify the prior checkout;
+2. preserve every earlier report and rejected plan as read-only audit history;
+3. confirm the prior report's account, region, cluster name, state bucket, and
+   state key against live read-only discovery, and set
+   `operator_secret_name` to the exact existing secret path from the approved
+   deployment specification rather than accepting the fresh-install default;
+4. initialize the corrected module against that exact existing backend and
+   state key, using the S3 lock file and with no concurrent Terraform process;
+5. if the exact operator Secrets Manager object already exists outside
+   Terraform, verify its account, region, name, KMS key, tags, and ownership,
+   then propose importing only that object into
+   `aws_secretsmanager_secret.operator`; state import requires explicit
+   approval and must not read the secret value. Refuse the import if the
+   configured `operator_secret_name` and discovered object name differ;
+6. create a fresh saved plan and compare it with live state; and
+7. require a separate approval for that exact reconciliation plan.
+
+The expected reconciliation adds the pinned Kyverno, External Secrets, and
+NVIDIA releases, the narrow External Secrets Pod Identity, the SecretStore and
+ExternalSecret binding, and changes the Karpenter NodeClass from a mutable AMI
+alias to the evaluated immutable alias. It must not recreate the VPC, EKS
+cluster, RDS instance, EFS file system, evidence bucket, or Terraform backend.
+Any unexplained destroy, replacement, state-key change, or resource adoption is
+`BLOCKED_PREFLIGHT`.
+
+An older rehearsal may retain an unused DynamoDB lock table after switching to
+the S3 lock file. Do not delete it during reconciliation. Inventory and remove
+it only in a separately approved decommission operation after proving no state
+backend or automation still references it.
+
+Only recommend a new parallel installation when the in-place plan is unsafe or
+the customer explicitly wants a second environment and accepts its cost.
+Decommissioning the old environment is a later, separately authorized phase I
+operation after the replacement is validated. Deployment or upgrade approval
+never implies deletion approval.
 
 Do not ask the customer for:
 
@@ -719,7 +766,7 @@ the verified AWS module, including:
 | Kubernetes | EKS cluster/node groups, add-ons, access entries, and Kubernetes/Helm resources |
 | Data | RDS, Secrets Manager metadata, EFS, S3 versioning/Object Lock, and KMS |
 | Elastic capacity | EC2 launch templates/Fleet/Spot, Auto Scaling, Karpenter, and service-linked roles |
-| State | Read/write the fixed Terraform state key, use the lock table, and use the state KMS key |
+| State | Read/write the fixed Terraform state key and S3 lock file, and use the state KMS key |
 | Observation | Read quotas, tags, health, logs, metrics, and resource configuration needed by validation |
 
 Do not grant an installer role ongoing source-data access. Terraform creates
@@ -729,7 +776,7 @@ after handoff according to customer policy.
 The agent checks:
 
 - state bucket versioning, encryption, public-access block, and TLS policy;
-- lock-table existence and encryption;
+- S3 lock-file capability and access;
 - KMS key status;
 - at least three available zones;
 - EKS/Kubernetes version availability;
@@ -824,10 +871,15 @@ After apply:
 
 1. update kubeconfig for the exact cluster output and confirm its AWS account,
    region, and cluster name;
-2. run sections 6 and 7;
-3. install only the approved Kyverno version and verified dependencies;
+2. verify the Terraform-managed Kyverno, External Secrets, NVIDIA plugin,
+   KEDA, Karpenter, metrics-server, and CSI releases against
+   `prerequisites.lock.json`;
+3. require Kyverno admission-controller high availability, healthy External
+   Secrets CRDs/webhooks, and the narrow EKS Pod Identity before continuing;
 4. stage the digest-bound model only when its license flag is true;
-5. bind external-secret references without reading values into agent context;
+5. populate the empty operator secret only through the released non-echoing
+   helper or the customer's approved encrypted process, then confirm the
+   Terraform-managed ExternalSecret becomes Ready without reading values;
 6. render and schema-check all manifests;
 7. require zero `REPLACE_*` markers and immutable image references;
 8. install admission policy before workloads; and
@@ -843,7 +895,7 @@ installing.
 
 The agent must not work around admission, NetworkPolicy, Pod Security, TLS,
 MFA, database-role, Object Lock, signature, or immutable-digest failures.
-If the customer-selected external secret controller is absent or unhealthy,
+If the pinned external secret controller is absent or unhealthy,
 stop with `BLOCKED_PREFLIGHT`; do not fall back to placing secret values on a
 command line or in a rendered Secret.
 
@@ -1046,7 +1098,7 @@ tag by itself is insufficient. The agent must not delete:
   secret-manager objects, or model registries that predated the installation;
 - shared Kyverno, KEDA, ingress, external-secret, monitoring, logging, or
   policy controllers;
-- a shared Terraform backend, lock table, state KMS key, GCP project, Azure
+- a shared Terraform backend or lock mechanism, state KMS key, GCP project, Azure
   resource group, VPC/VNet, subnet, or Kubernetes cluster;
 - Rapticore's public ECR images, OCI charts, GitHub repository, release
   artifacts, or signing records; or
@@ -1306,7 +1358,7 @@ The qualification/archive bucket or Terraform backend itself may be deleted
 only if the inventory proves it was created solely for this installation and a
 separate approved plan names it. Otherwise delete only eligible,
 installation-owned versions or the fixed state key and retain the shared
-bucket, lock table, and backend KMS key.
+bucket, S3 lock file, and backend KMS key.
 
 Never use `--force`, recursive bucket deletion, retention-bypass APIs, broad
 resource-group deletion, wildcard resource names, or unreviewed `state rm`.
@@ -1598,7 +1650,7 @@ edit templates or replace markers. In its private work area, the agent:
    capacity.
 
 If the customer chose generated prerequisites, the agent presents a separate
-bootstrap plan for the state bucket/key, lock table, KMS keys, synthetic source
+bootstrap plan for the state bucket/key, S3 lock file, KMS keys, synthetic source
 bucket, and qualification buckets before creating them. If existing
 prerequisites were selected, it verifies encryption, versioning, Object Lock
 where required, public-access blocks, ownership, and exact state-key
@@ -1631,6 +1683,7 @@ terraform -chdir=infra/aws-central init \
   -backend-config=key=ore-heaphound/staging/aws-central.tfstate \
   -backend-config=region="$AWS_REGION" \
   -backend-config=encrypt=true \
+  -backend-config=use_lockfile=true \
   -backend-config=kms_key_id=CUSTOMER_TERRAFORM_STATE_KMS_KEY
 
 terraform -chdir=infra/aws-central validate
@@ -1662,6 +1715,11 @@ Have a second person review the plan. Confirm:
 - Multi-AZ RDS, encryption, PITR, and deletion protection;
 - S3 versioning, Object Lock, KMS, and at least 365-day retention;
 - EFS encryption;
+- exact pinned prerequisite chart versions and package hashes;
+- an encrypted empty operator Secrets Manager object, a narrow External
+  Secrets Pod Identity, and no secret value in Terraform state;
+- a Karpenter AMI alias matching the immutable alias in
+  `prerequisites.lock.json`;
 - `scan-spot` and `llm-spot` pools with scale-to-zero capacity;
 - lower-priority on-demand fallback only if explicitly approved;
 - no unexpected public endpoint or broad IAM wildcard; and
@@ -1686,14 +1744,16 @@ Do not retain `tfplan` or `private-tfplan.json` as qualification evidence; they
 can contain sensitive coordinates. Produce a separate sanitized infrastructure
 summary instead.
 
-## 6. Install prerequisites, model storage, and secrets
+## 6. Validate prerequisites, model storage, and secrets
 
 Before Ore Heaphound:
 
-1. install the customer-approved Kyverno v1.18+ release in its own namespace;
-2. confirm KEDA, metrics-server, Karpenter, the EBS/EFS CSI drivers, and the
-   NVIDIA device plugin are healthy;
-3. create namespace `sddp`;
+1. confirm Terraform installed the exact locked Kyverno release in its own
+   namespace with at least two admission-controller replicas;
+2. confirm the exact locked External Secrets and NVIDIA device-plugin releases,
+   KEDA, metrics-server, Karpenter, and the EBS/EFS CSI drivers are healthy;
+3. confirm Terraform owns namespace `sddp`, the SecretStore, ExternalSecret,
+   encrypted operator secret metadata, and narrow Pod Identity;
 4. create the EFS-backed model claim;
 5. stage the exact approved model weights into the claim through a temporary
    reviewed Job;
@@ -1702,18 +1762,37 @@ Before Ore Heaphound:
    contents in qualification evidence.
 
 ```bash
-kubectl create namespace sddp
-
 sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
   manifests/model-pvc-eks.yaml | kubectl apply -f -
 
 kubectl -n sddp get pvc
 ```
 
-Create `sddp-production-operator-secrets` through the customer's external
-secret controller or encrypted deployment process. The production chart needs
-the migration, runtime, and web database URLs and role passwords documented in
-the EKS deployment guide. Never paste or print them during the walkthrough.
+For a new empty operator secret, use the released helper from the verified
+checkout. Its arguments are non-secret coordinates. It refuses to overwrite an
+existing version and keeps retrieved/generated values in a mode-`0700`
+temporary directory that is removed on exit:
+
+```bash
+customer-deploy/scripts/populate-operator-secret.sh \
+  "$(terraform -chdir=infra/aws-central output -raw region)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_endpoint)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_name)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_master_secret_arn)" \
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
+  "$(terraform -chdir=infra/aws-central output -raw data_kms_key_arn)"
+
+kubectl -n sddp wait \
+  --for=condition=Ready externalsecret/ore-heaphound-operator \
+  --timeout=5m
+kubectl -n sddp get secret \
+  "$(terraform -chdir=infra/aws-central output -raw operator_kubernetes_secret_name)" \
+  -o jsonpath='{.metadata.name}{"\n"}'
+```
+
+Never display the Secret, its data keys, or the AWS secret value. If the
+operator object already has a version, stop and use the customer's approved
+rotation/update process; do not bypass the helper's overwrite refusal.
 
 The retained bootstrap Job creates the application encryption/signing keys,
 role tokens, and KEDA token in a separate generated Secret. Back up that Secret

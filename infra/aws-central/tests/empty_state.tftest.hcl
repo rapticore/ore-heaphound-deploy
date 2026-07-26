@@ -92,4 +92,22 @@ run "empty_state_plan" {
     condition     = aws_db_instance.postgres.db_subnet_group_name == module.vpc.database_subnet_group_name
     error_message = "RDS must consume the DB subnet group owned by the VPC module."
   }
+
+  assert {
+    condition     = var.karpenter_ami_alias == "al2023@v20260724"
+    error_message = "Karpenter must use the evaluated immutable AL2023 AMI release."
+  }
+
+  assert {
+    condition     = aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
+    error_message = "The fresh plan must own the encrypted operator secret metadata without storing a value in Terraform."
+  }
+
+  assert {
+    condition = (
+      aws_eks_pod_identity_association.external_secrets.namespace == "external-secrets" &&
+      aws_eks_pod_identity_association.external_secrets.service_account == "external-secrets"
+    )
+    error_message = "External Secrets must use its dedicated EKS Pod Identity."
+  }
 }

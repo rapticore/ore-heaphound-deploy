@@ -60,7 +60,7 @@ aws:
     key: auto
     region: us-west-2
     kms_key_arn: auto
-    lock_table: auto
+    use_lockfile: true
 
 gcp:
   enabled: false
@@ -94,7 +94,11 @@ network:
 
 kubernetes:
   namespace: sddp
-  kyverno_minimum_version: "1.18.0"
+  prerequisite_lock: prerequisites.lock.json
+  kyverno_chart_version: auto_from_verified_lock
+  external_secrets_chart_version: auto_from_verified_lock
+  nvidia_device_plugin_chart_version: auto_from_verified_lock
+  karpenter_ami_alias: auto_from_verified_lock
   customer_values_file: auto_private_workdir
 
 model:
@@ -110,7 +114,7 @@ secrets:
   # The agent proposes dedicated generated references or records existing
   # customer references. It never prints or stores their secret values here.
   delivery_method: auto
-  controller_namespace: null
+  controller_namespace: external-secrets
   operator_secret_reference: auto
   web_tls_secret_reference: null
   gateway_tls_secret_reference: null

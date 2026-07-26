@@ -15,6 +15,10 @@ output "database_endpoint" {
   value = aws_db_instance.postgres.address
 }
 
+output "database_name" {
+  value = var.database_name
+}
+
 output "database_master_secret_arn" {
   value = aws_db_instance.postgres.master_user_secret[0].secret_arn
 }
@@ -37,4 +41,17 @@ output "control_plane_role_arn" {
 
 output "scan_worker_role_arn" {
   value = aws_iam_role.workload["scan_worker"].arn
+}
+
+output "operator_secret_arn" {
+  description = "Encrypted operator secret object. Terraform intentionally does not manage its value."
+  value       = aws_secretsmanager_secret.operator.arn
+}
+
+output "operator_kubernetes_secret_name" {
+  value = var.operator_kubernetes_secret_name
+}
+
+output "external_secrets_role_arn" {
+  value = aws_iam_role.external_secrets.arn
 }

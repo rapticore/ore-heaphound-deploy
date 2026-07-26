@@ -35,11 +35,12 @@ resource "aws_iam_role_policy_attachment" "csi" {
 }
 
 locals {
-  azs              = slice(data.aws_availability_zones.available.names, 0, 3)
-  cluster_name     = var.name
-  private_subnets  = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index)]
-  database_subnets = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index + 4)]
-  public_subnets   = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index + 8)]
+  azs                  = slice(data.aws_availability_zones.available.names, 0, 3)
+  cluster_name         = var.name
+  operator_secret_name = coalesce(var.operator_secret_name, "/${var.name}/operator")
+  private_subnets      = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index)]
+  database_subnets     = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index + 4)]
+  public_subnets       = [for index, _ in local.azs : cidrsubnet(var.vpc_cidr, 4, index + 8)]
 }
 
 module "vpc" {
@@ -318,13 +319,109 @@ resource "helm_release" "metrics_server" {
   depends_on = [module.eks]
 }
 
+resource "helm_release" "kyverno" {
+  namespace        = "kyverno"
+  create_namespace = true
+  name             = "kyverno"
+  repository       = "https://kyverno.github.io/kyverno/"
+  chart            = "kyverno"
+  version          = "3.8.2"
+  wait             = true
+  timeout          = 900
+
+  values = [yamlencode({
+    admissionController  = { replicas = 2 }
+    backgroundController = { replicas = 2 }
+    cleanupController    = { replicas = 2 }
+    reportsController    = { replicas = 2 }
+  })]
+
+  depends_on = [module.eks]
+}
+
+resource "helm_release" "external_secrets" {
+  namespace        = "external-secrets"
+  create_namespace = true
+  name             = "external-secrets"
+  repository       = "https://charts.external-secrets.io"
+  chart            = "external-secrets"
+  version          = "2.8.0"
+  wait             = true
+  timeout          = 900
+
+  values = [yamlencode({
+    installCRDs = true
+    serviceAccount = {
+      create = true
+      name   = "external-secrets"
+    }
+    leaderElect = true
+  })]
+
+  depends_on = [
+    module.eks,
+    aws_eks_pod_identity_association.external_secrets,
+  ]
+}
+
+resource "helm_release" "nvidia_device_plugin" {
+  namespace        = "nvidia-device-plugin"
+  create_namespace = true
+  name             = "nvidia-device-plugin"
+  repository       = "https://nvidia.github.io/k8s-device-plugin"
+  chart            = "nvidia-device-plugin"
+  version          = "0.19.3"
+  wait             = true
+  timeout          = 900
+
+  values = [yamlencode({
+    # Karpenter exposes accelerator capacity labels. Avoid a privileged
+    # cluster-wide Node Feature Discovery DaemonSet solely for this plugin.
+    nfd = { enabled = false }
+    nodeSelector = {
+      "rapticore.io/workload" = "llm"
+    }
+    affinity = {
+      nodeAffinity = {
+        requiredDuringSchedulingIgnoredDuringExecution = {
+          nodeSelectorTerms = [{
+            matchExpressions = [{
+              key      = "karpenter.k8s.aws/instance-gpu-count"
+              operator = "Exists"
+            }]
+          }]
+        }
+      }
+    }
+    tolerations = [
+      {
+        key      = "CriticalAddonsOnly"
+        operator = "Exists"
+      },
+      {
+        key      = "nvidia.com/gpu"
+        operator = "Exists"
+        effect   = "NoSchedule"
+      },
+      {
+        key      = "rapticore.io/workload"
+        operator = "Equal"
+        value    = "llm"
+        effect   = "NoSchedule"
+      },
+    ]
+  })]
+
+  depends_on = [module.eks]
+}
+
 resource "kubectl_manifest" "node_class" {
   yaml_body = yamlencode({
     apiVersion = "karpenter.k8s.aws/v1"
     kind       = "EC2NodeClass"
     metadata   = { name = var.name }
     spec = {
-      amiSelectorTerms           = [{ alias = "al2023@latest" }]
+      amiSelectorTerms           = [{ alias = var.karpenter_ami_alias }]
       role                       = module.karpenter.node_iam_role_name
       subnetSelectorTerms        = [{ tags = { "karpenter.sh/discovery" = local.cluster_name } }]
       securityGroupSelectorTerms = [{ tags = { "karpenter.sh/discovery" = local.cluster_name } }]
@@ -453,6 +550,141 @@ resource "aws_kms_key" "data" {
 resource "aws_kms_alias" "data" {
   name          = "alias/${var.name}-data"
   target_key_id = aws_kms_key.data.key_id
+}
+
+resource "aws_secretsmanager_secret" "operator" {
+  name                    = local.operator_secret_name
+  description             = "Ore Heaphound operator-owned deployment inputs"
+  kms_key_id              = aws_kms_key.data.arn
+  recovery_window_in_days = 30
+
+  # Secret values are populated through the approved encrypted process. No
+  # aws_secretsmanager_secret_version belongs in Terraform state.
+}
+
+resource "aws_iam_role" "external_secrets" {
+  name               = "${var.name}-external-secrets"
+  assume_role_policy = data.aws_iam_policy_document.eks_pod_identity_assume.json
+}
+
+data "aws_iam_policy_document" "external_secrets" {
+  statement {
+    sid = "ReadExactOperatorSecret"
+    actions = [
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetResourcePolicy",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:ListSecretVersionIds",
+    ]
+    resources = [aws_secretsmanager_secret.operator.arn]
+  }
+
+  statement {
+    sid       = "DecryptExactOperatorSecret"
+    actions   = ["kms:Decrypt"]
+    resources = [aws_kms_key.data.arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["secretsmanager.${var.region}.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:SecretARN"
+      values   = [aws_secretsmanager_secret.operator.arn]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "external_secrets" {
+  name   = "read-exact-operator-secret"
+  role   = aws_iam_role.external_secrets.id
+  policy = data.aws_iam_policy_document.external_secrets.json
+}
+
+resource "aws_eks_pod_identity_association" "external_secrets" {
+  cluster_name    = local.cluster_name
+  namespace       = "external-secrets"
+  service_account = "external-secrets"
+  role_arn        = aws_iam_role.external_secrets.arn
+
+  depends_on = [module.eks]
+}
+
+resource "kubectl_manifest" "workload_namespace" {
+  yaml_body = yamlencode({
+    apiVersion = "v1"
+    kind       = "Namespace"
+    metadata = {
+      name = var.namespace
+      labels = {
+        "app.kubernetes.io/part-of"                  = "ore-heaphound"
+        "pod-security.kubernetes.io/enforce"         = "restricted"
+        "pod-security.kubernetes.io/enforce-version" = "v${var.kubernetes_version}"
+      }
+    }
+  })
+
+  depends_on = [module.eks]
+}
+
+resource "kubectl_manifest" "operator_secret_store" {
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1"
+    kind       = "SecretStore"
+    metadata = {
+      name      = "ore-heaphound-operator"
+      namespace = var.namespace
+    }
+    spec = {
+      provider = {
+        aws = {
+          service = "SecretsManager"
+          region  = var.region
+        }
+      }
+    }
+  })
+
+  depends_on = [
+    helm_release.external_secrets,
+    kubectl_manifest.workload_namespace,
+  ]
+}
+
+resource "kubectl_manifest" "operator_external_secret" {
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "ore-heaphound-operator"
+      namespace = var.namespace
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        kind = "SecretStore"
+        name = "ore-heaphound-operator"
+      }
+      target = {
+        name           = var.operator_kubernetes_secret_name
+        creationPolicy = "Owner"
+        deletionPolicy = "Retain"
+      }
+      dataFrom = [{
+        extract = {
+          key = local.operator_secret_name
+        }
+      }]
+    }
+  })
+
+  depends_on = [
+    aws_secretsmanager_secret.operator,
+    kubectl_manifest.operator_secret_store,
+  ]
 }
 
 resource "aws_security_group" "database" {

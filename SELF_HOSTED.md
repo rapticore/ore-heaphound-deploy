@@ -176,7 +176,12 @@ The stack creates:
 - a KMS-encrypted S3 Object Lock bucket;
 - encrypted EFS model storage; and
 - separate IRSA roles for inventory/anchor writes and source-object reads; and
-- KEDA, metrics-server, and the required CSI drivers.
+- KEDA, metrics-server, and the required CSI drivers;
+- pinned Kyverno, External Secrets, and NVIDIA device-plugin releases;
+- an immutable evaluated Karpenter AL2023 AMI selector;
+- an encrypted empty operator Secrets Manager object and exact-resource Pod
+  Identity; and
+- the `sddp` namespace, SecretStore, and ExternalSecret binding.
 
 Set the EKS API allowlist to administrator/CI addresses only. The GKE reference
 uses private nodes and therefore requires Private Google Access plus Cloud NAT
@@ -188,12 +193,25 @@ Review NAT, database, EFS/Filestore, GPU, and fallback-node costs before apply.
 The infrastructure modules deliberately use deletion protection and
 `prevent_destroy` for evidence storage.
 
-## 3. Create Kubernetes secrets and stage the model
+## 3. Populate the operator secret and stage the model
 
-Create the namespace and the model claim:
+Terraform creates the namespace and external-secret binding. Populate a new
+empty operator object without exposing values to the terminal or Terraform,
+then create the model claim:
 
 ```sh
-kubectl create namespace sddp
+customer-deploy/scripts/populate-operator-secret.sh \
+  "$(terraform -chdir=infra/aws-central output -raw region)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_endpoint)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_name)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_master_secret_arn)" \
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
+  "$(terraform -chdir=infra/aws-central output -raw data_kms_key_arn)"
+
+kubectl -n sddp wait \
+  --for=condition=Ready externalsecret/ore-heaphound-operator \
+  --timeout=5m
+
 sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
   manifests/model-pvc-eks.yaml | kubectl apply -f -
 ```
@@ -204,7 +222,7 @@ from an approved upstream registry or copy from customer object storage. Delete
 the Job and deny runtime egress after staging. Rapticore does not distribute
 model weights.
 
-Create `sddp-production-operator-secrets` with at least:
+The synchronized `sddp-production-operator-secrets` contains at least:
 
 - `SDDP_DATABASE_URL`, built from the RDS endpoint and the AWS-managed master
   secret, using TLS verification;
