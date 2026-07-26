@@ -17,12 +17,14 @@ separately authorized LLM procedure for operational uninstall and eventual
 post-retention removal.
 
 Fresh AWS installations obtain Kyverno, External Secrets, the NVIDIA device
-plugin, and the evaluated EKS AMI from
-[prerequisites.lock.json](prerequisites.lock.json). Terraform creates the
-encrypted operator-secret metadata and least-privilege synchronization path;
-secret values remain outside Terraform and are populated with the released
-non-echoing helper. Existing develop rehearsals should normally use the
-runbook's saved-plan reconciliation path, not decommission and recreation.
+plugin, six EKS managed add-ons, and the evaluated EKS AMI from
+[prerequisites.lock.json](prerequisites.lock.json). The separately approved
+bootstrap state is the sole owner of the encrypted empty operator-secret
+object; AWS central performs metadata-only lookup and creates the
+least-privilege synchronization path. Secret values remain outside Terraform
+and are populated with the released non-echoing helper. Existing develop
+rehearsals should normally use the runbook's saved-plan reconciliation path,
+not decommission and recreation.
 
 The `main` branch contains the current deployment templates and may retain
 `REPLACE_*` markers. For production, check out an immutable `vX.Y.Z` release

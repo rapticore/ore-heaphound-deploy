@@ -139,6 +139,13 @@ an encrypted remote state backend. Use Terraform exactly `1.15.8` and AWS CLI
 v2.7.0 or newer; the exec credential plugins obtain a fresh EKS token only
 after the cluster is ready.
 
+Before planning AWS central, complete the separately reviewed prerequisite
+bootstrap procedure in [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
+That state must own the exact empty KMS-encrypted operator secret selected by
+`operator_secret_name`. AWS central intentionally fails planning when the
+object is absent and never imports it. Verify only its metadata and keep its
+value out of Terraform and command output.
+
 ```sh
 test "$(terraform version -json | jq -r .terraform_version)" = "1.15.8"
 
@@ -178,9 +185,10 @@ The stack creates:
 - separate IRSA roles for inventory/anchor writes and source-object reads; and
 - KEDA, metrics-server, and the required CSI drivers;
 - pinned Kyverno, External Secrets, and NVIDIA device-plugin releases;
+- six EKS managed add-ons pinned to `prerequisites.lock.json`;
 - an immutable evaluated Karpenter AL2023 AMI selector;
-- an encrypted empty operator Secrets Manager object and exact-resource Pod
-  Identity; and
+- a metadata-only reference to the bootstrap-owned encrypted operator
+  Secrets Manager object and exact-resource Pod Identity; and
 - the `sddp` namespace, SecretStore, and ExternalSecret binding.
 
 Set the EKS API allowlist to administrator/CI addresses only. The GKE reference
@@ -195,9 +203,11 @@ The infrastructure modules deliberately use deletion protection and
 
 ## 3. Populate the operator secret and stage the model
 
-Terraform creates the namespace and external-secret binding. Populate a new
-empty operator object without exposing values to the terminal or Terraform,
-then create the model claim:
+The prerequisite/bootstrap state is the sole owner of the empty encrypted
+operator object. AWS central references its metadata but never imports,
+re-keys, deletes, or reads its value. It creates the namespace and
+external-secret binding. Populate the object without exposing values to the
+terminal or Terraform, then create the model claim:
 
 ```sh
 customer-deploy/scripts/populate-operator-secret.sh \
@@ -206,7 +216,7 @@ customer-deploy/scripts/populate-operator-secret.sh \
   "$(terraform -chdir=infra/aws-central output -raw database_name)" \
   "$(terraform -chdir=infra/aws-central output -raw database_master_secret_arn)" \
   "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
-  "$(terraform -chdir=infra/aws-central output -raw data_kms_key_arn)"
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_kms_key_arn)"
 
 kubectl -n sddp wait \
   --for=condition=Ready externalsecret/ore-heaphound-operator \

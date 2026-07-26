@@ -44,6 +44,15 @@ mock_provider "aws" {
       name        = "us-west-2"
     }
   }
+
+  mock_data "aws_secretsmanager_secret" {
+    defaults = {
+      arn        = "arn:aws:secretsmanager:us-west-2:123456789012:secret:/ore-heaphound-ci/operator-example"
+      id         = "arn:aws:secretsmanager:us-west-2:123456789012:secret:/ore-heaphound-ci/operator-example"
+      kms_key_id = "arn:aws:kms:us-west-2:123456789012:key/11111111-2222-3333-4444-555555555555"
+      name       = "/ore-heaphound-ci/operator"
+    }
+  }
 }
 mock_provider "helm" {}
 mock_provider "kubectl" {}
@@ -99,8 +108,18 @@ run "empty_state_plan" {
   }
 
   assert {
-    condition     = aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
-    error_message = "The fresh plan must own the encrypted operator secret metadata without storing a value in Terraform."
+    condition     = data.aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
+    error_message = "The central plan must reference the exact bootstrap-owned operator secret."
+  }
+
+  assert {
+    condition     = output.operator_secret_kms_key_arn == "arn:aws:kms:us-west-2:123456789012:key/11111111-2222-3333-4444-555555555555"
+    error_message = "External Secrets must use the KMS key discovered from the bootstrap-owned operator secret."
+  }
+
+  assert {
+    condition     = var.eks_addon_versions["kube-proxy"] == "v1.34.6-eksbuild.17"
+    error_message = "The EKS managed add-on set must match the immutable release lock."
   }
 
   assert {
@@ -110,4 +129,25 @@ run "empty_state_plan" {
     )
     error_message = "External Secrets must use its dedicated EKS Pod Identity."
   }
+}
+
+run "reject_unlocked_addon_version" {
+  command = plan
+
+  variables {
+    name                                 = "ore-heaphound-ci"
+    region                               = "us-west-2"
+    anchor_bucket_name                   = "ore-heaphound-ci-anchor"
+    cluster_endpoint_public_access_cidrs = ["192.0.2.10/32"]
+    eks_addon_versions = {
+      aws-ebs-csi-driver     = "v1.63.0-eksbuild.1"
+      aws-efs-csi-driver     = "v3.4.0-eksbuild.1"
+      coredns                = "v1.13.2-eksbuild.11"
+      eks-pod-identity-agent = "v1.3.10-eksbuild.3"
+      kube-proxy             = "v1.34.6-eksbuild.18"
+      vpc-cni                = "v1.22.4-eksbuild.3"
+    }
+  }
+
+  expect_failures = [var.eks_addon_versions]
 }

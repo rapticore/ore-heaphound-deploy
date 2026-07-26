@@ -55,12 +55,18 @@ aws:
   synthetic_source_bucket: auto
   synthetic_source_kms_key_arn: auto
   enable_on_demand_fallback: true
+  # Generated once for a new stack. On resume/reconcile, copy the exact
+  # existing map; a newer release tag does not rewrite ReleaseTag.
+  infrastructure_tags: auto_from_existing_state_or_generated_once
   terraform_state:
     bucket: auto
     key: auto
     region: us-west-2
     kms_key_arn: auto
     use_lockfile: true
+  # Filled from the bootstrap plan/state. It is never imported into
+  # aws-central state.
+  operator_secret_owner_state_key: auto
 
 gcp:
   enabled: false
@@ -95,6 +101,8 @@ network:
 kubernetes:
   namespace: sddp
   prerequisite_lock: prerequisites.lock.json
+  eks_kubernetes_version: auto_from_verified_lock
+  eks_addon_versions: auto_from_verified_lock
   kyverno_chart_version: auto_from_verified_lock
   external_secrets_chart_version: auto_from_verified_lock
   nvidia_device_plugin_chart_version: auto_from_verified_lock
@@ -116,6 +124,7 @@ secrets:
   delivery_method: auto
   controller_namespace: external-secrets
   operator_secret_reference: auto
+  operator_secret_terraform_owner: bootstrap_state
   web_tls_secret_reference: null
   gateway_tls_secret_reference: null
 

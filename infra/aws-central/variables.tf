@@ -9,8 +9,51 @@ variable "region" {
 }
 
 variable "kubernetes_version" {
-  type    = string
-  default = "1.33"
+  description = "Exact EKS Kubernetes version qualified with the pinned managed add-ons in eks_addon_versions."
+  type        = string
+  default     = "1.34"
+
+  validation {
+    condition     = var.kubernetes_version == "1.34"
+    error_message = "This immutable deployment module is qualified only for EKS Kubernetes 1.34."
+  }
+}
+
+variable "eks_addon_versions" {
+  description = "Exact EKS managed add-on versions verified by prerequisites.lock.json. Update only through a new immutable release."
+  type        = map(string)
+  default = {
+    aws-ebs-csi-driver     = "v1.63.0-eksbuild.1"
+    aws-efs-csi-driver     = "v3.4.0-eksbuild.1"
+    coredns                = "v1.13.2-eksbuild.11"
+    eks-pod-identity-agent = "v1.3.10-eksbuild.3"
+    kube-proxy             = "v1.34.6-eksbuild.17"
+    vpc-cni                = "v1.22.4-eksbuild.3"
+  }
+
+  validation {
+    condition = (
+      toset(keys(var.eks_addon_versions)) == toset([
+        "aws-ebs-csi-driver",
+        "aws-efs-csi-driver",
+        "coredns",
+        "eks-pod-identity-agent",
+        "kube-proxy",
+        "vpc-cni",
+      ]) &&
+      alltrue([
+        for addon, version in {
+          aws-ebs-csi-driver     = "v1.63.0-eksbuild.1"
+          aws-efs-csi-driver     = "v3.4.0-eksbuild.1"
+          coredns                = "v1.13.2-eksbuild.11"
+          eks-pod-identity-agent = "v1.3.10-eksbuild.3"
+          kube-proxy             = "v1.34.6-eksbuild.17"
+          vpc-cni                = "v1.22.4-eksbuild.3"
+        } : lookup(var.eks_addon_versions, addon, "") == version
+      ])
+    )
+    error_message = "eks_addon_versions must exactly match the six versions verified by this immutable release."
+  }
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
@@ -121,7 +164,7 @@ variable "karpenter_ami_alias" {
 }
 
 variable "operator_secret_name" {
-  description = "Optional exact AWS Secrets Manager name for the operator JSON object. Defaults to /<name>/operator."
+  description = "Exact bootstrap-owned AWS Secrets Manager name for the operator JSON object. AWS central references its metadata but never owns or imports it. Defaults to /<name>/operator."
   type        = string
   default     = null
   nullable    = true
@@ -148,7 +191,8 @@ variable "operator_kubernetes_secret_name" {
 }
 
 variable "tags" {
-  type = map(string)
+  description = "Stable infrastructure identity tags. During reconciliation preserve the exact tags already recorded in state; do not change ReleaseTag to the software release being reconciled."
+  type        = map(string)
   default = {
     Project   = "ore-heaphound"
     ManagedBy = "opentofu"

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 <region> <database-endpoint> <database-name> <master-secret-arn> <operator-secret-arn> <data-kms-key-arn>" >&2
+  echo "usage: $0 <region> <database-endpoint> <database-name> <master-secret-arn> <operator-secret-arn> <operator-secret-kms-key-arn>" >&2
   exit 2
 }
 
@@ -13,14 +13,14 @@ readonly DATABASE_ENDPOINT="$2"
 readonly DATABASE_NAME="$3"
 readonly MASTER_SECRET_ARN="$4"
 readonly OPERATOR_SECRET_ARN="$5"
-readonly DATA_KMS_KEY_ARN="$6"
+readonly OPERATOR_SECRET_KMS_KEY_ARN="$6"
 
 [[ "$REGION" =~ ^[a-z]{2}(-gov)?-[a-z]+-[0-9]+$ ]] || usage
 [[ "$DATABASE_ENDPOINT" =~ ^[A-Za-z0-9.-]+$ ]] || usage
 [[ "$DATABASE_NAME" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || usage
 [[ "$MASTER_SECRET_ARN" =~ ^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$ ]] || usage
 [[ "$OPERATOR_SECRET_ARN" =~ ^arn:[^:]+:secretsmanager:[^:]+:[0-9]{12}:secret:.+$ ]] || usage
-[[ "$DATA_KMS_KEY_ARN" =~ ^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/[A-Za-z0-9-]+$ ]] || usage
+[[ "$OPERATOR_SECRET_KMS_KEY_ARN" =~ ^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/[A-Za-z0-9-]+$ ]] || usage
 
 for command_name in aws jq openssl; do
   command -v "$command_name" >/dev/null || {
@@ -38,7 +38,7 @@ for secret_arn in "$MASTER_SECRET_ARN" "$OPERATOR_SECRET_ARN"; do
     exit 1
   }
 done
-[[ "$DATA_KMS_KEY_ARN" == arn:*:kms:"${REGION}":"${CALLER_ACCOUNT}":key/* ]] || {
+[[ "$OPERATOR_SECRET_KMS_KEY_ARN" == arn:*:kms:"${REGION}":"${CALLER_ACCOUNT}":key/* ]] || {
   echo "refusing a KMS key outside the authenticated AWS account or selected region" >&2
   exit 1
 }
@@ -50,8 +50,8 @@ readonly OPERATOR_KMS_KEY="$(
     --query KmsKeyId \
     --output text
 )"
-[[ "$OPERATOR_KMS_KEY" == "$DATA_KMS_KEY_ARN" ]] || {
-  echo "operator secret is not encrypted with the expected deployment KMS key" >&2
+[[ "$OPERATOR_KMS_KEY" == "$OPERATOR_SECRET_KMS_KEY_ARN" ]] || {
+  echo "operator secret is not encrypted with the expected bootstrap KMS key" >&2
   exit 1
 }
 

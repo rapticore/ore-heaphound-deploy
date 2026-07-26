@@ -27,12 +27,21 @@ group. Preserve that tag, the apply-forbidden plan, and its reports as audit
 history. Use a newer immutable prerelease with exactly one DB subnet-group
 owner.
 
+Do not deploy `v0.1.0-develop.6`. Its AWS central state attempts to create an
+operator secret already owned by the approved bootstrap state, may select
+different KMS ownership, and uses mutable `most_recent` EKS add-on selection.
+Its reconciliation instructions also allow a new software release tag to
+change stable infrastructure tags and the system-node launch template.
+Preserve that tag, the rejected plan, and its reports as audit history. Use a
+newer immutable prerelease that references the bootstrap-owned secret, pins all
+six add-ons, and preserves the existing infrastructure tag map.
+
 Use only a newer immutable develop prerelease whose release workflow passed the
 Terraform deployment-kit and pinned-prerequisite gates. Its
 `prerequisites.lock.json` must identify exact Kyverno, External Secrets,
-NVIDIA device-plugin, and EKS AMI releases and verified package hashes. That
-corrected prerelease is suitable for rehearsing this runbook, but it cannot be
-finalized as qualified:
+NVIDIA device-plugin, EKS managed add-on, and EKS AMI releases and verified
+package hashes. That corrected prerelease is suitable for rehearsing this
+runbook, but it cannot be finalized as qualified:
 
 - its detector bundle is intentionally `not_qualified`; and
 - its release manifest correctly says that a separate target-environment
@@ -205,22 +214,28 @@ remote state:
    deployment specification rather than accepting the fresh-install default;
 4. initialize the corrected module against that exact existing backend and
    state key, using the S3 lock file and with no concurrent Terraform process;
-5. if the exact operator Secrets Manager object already exists outside
-   Terraform, verify its account, region, name, KMS key, tags, and ownership,
-   then propose importing only that object into
-   `aws_secretsmanager_secret.operator`; state import requires explicit
-   approval and must not read the secret value. Refuse the import if the
-   configured `operator_secret_name` and discovered object name differ;
-6. create a fresh saved plan and compare it with live state; and
-7. require a separate approval for that exact reconciliation plan.
+5. verify with metadata-only calls that the operator secret is already owned
+   by the prerequisite/bootstrap state, then confirm AWS central contains only
+   `data.aws_secretsmanager_secret.operator`; never import, move, remove,
+   re-key, recreate, or adopt that object in AWS central state;
+6. copy the exact existing infrastructure `tags` map from the prior approved
+   configuration/state. In particular, retain its existing `ReleaseTag` value:
+   it records the release that provisioned the infrastructure and is not the
+   software release currently being reconciled;
+7. verify the six planned EKS add-on target versions equal
+   `prerequisites.lock.json` before accepting the plan;
+8. create a fresh saved plan and compare it with live state; and
+9. require a separate approval for that exact reconciliation plan.
 
 The expected reconciliation adds the pinned Kyverno, External Secrets, and
 NVIDIA releases, the narrow External Secrets Pod Identity, the SecretStore and
 ExternalSecret binding, and changes the Karpenter NodeClass from a mutable AMI
 alias to the evaluated immutable alias. It must not recreate the VPC, EKS
-cluster, RDS instance, EFS file system, evidence bucket, or Terraform backend.
-Any unexplained destroy, replacement, state-key change, or resource adoption is
-`BLOCKED_PREFLIGHT`.
+cluster, RDS instance, EFS file system, evidence bucket, Terraform backend, or
+operator secret. It must not change the existing secret KMS key, any EKS
+managed add-on version, the system node group, or its launch template. Any
+unexplained destroy, replacement, state-key change, add-on drift, core
+infrastructure update, or resource adoption is `BLOCKED_PREFLIGHT`.
 
 An older rehearsal may retain an unused DynamoDB lock table after switching to
 the S3 lock file. Do not delete it during reconciliation. Inventory and remove
@@ -764,7 +779,7 @@ the verified AWS module, including:
 | Identity | Create/pass the narrowly scoped EKS, Karpenter, CSI, control-plane, worker, and remediation roles and policies |
 | Network | VPC, subnets, route tables, NAT, security groups, endpoints, and load balancer integration |
 | Kubernetes | EKS cluster/node groups, add-ons, access entries, and Kubernetes/Helm resources |
-| Data | RDS, Secrets Manager metadata, EFS, S3 versioning/Object Lock, and KMS |
+| Data | RDS, metadata-only lookup of the bootstrap-owned operator secret, EFS, S3 versioning/Object Lock, and KMS |
 | Elastic capacity | EC2 launch templates/Fleet/Spot, Auto Scaling, Karpenter, and service-linked roles |
 | State | Read/write the fixed Terraform state key and S3 lock file, and use the state KMS key |
 | Observation | Read quotas, tags, health, logs, metrics, and resource configuration needed by validation |
@@ -847,6 +862,18 @@ Fail when:
 - images or charts are mutable;
 - a non-zero approved ceiling exists and the estimate exceeds it; or
 - the plan contains an unexplained destroy or replacement.
+
+For an in-place reconciliation, also fail when:
+
+- `aws_secretsmanager_secret.operator` or any operator-secret create/import is
+  present instead of the metadata-only data source;
+- the discovered operator-secret ARN or KMS key differs from the approved
+  bootstrap-state object;
+- any EKS managed add-on target differs from `prerequisites.lock.json`;
+- the existing infrastructure `tags` map changes merely because a newer
+  software release is being used; or
+- the system managed node group or its launch template changes without a
+  separately reviewed infrastructure reason.
 
 If `authorization.provision_infrastructure` is false, stop with
 `AWAITING_CUSTOMER_APPROVAL` and show the customer:
@@ -1510,7 +1537,10 @@ Terraform, it:
    prerequisites were approved, creates it through the separate bootstrap
    plan; and
 7. validates or creates the dedicated versioned, KMS-encrypted synthetic S3
-   source bucket containing no production data.
+   source bucket containing no production data; and
+8. creates the empty KMS-encrypted operator secret in that same approved
+   prerequisite/bootstrap ownership boundary before AWS central is planned.
+   The bootstrap state remains its sole Terraform owner for the installation.
 
 The Terraform stack has deletion protection and retained evidence resources.
 Agree on the decommission procedure before applying it; do not assume a blind
@@ -1643,19 +1673,24 @@ edit templates or replace markers. In its private work area, the agent:
 3. renders the approved generated names and discovered coordinates;
 4. adds the resolved remote-state backend configuration;
 5. fails if any applicable `auto`, null, or `REPLACE_*` marker remains;
-6. creates or references dedicated secret-manager objects without writing secret
-   values into configuration; and
+6. references the exact bootstrap-owned operator secret without importing it
+   into AWS central or writing secret values into configuration; and
 7. requires a new customer review for changes to account IDs, role ARNs,
    source buckets, domains, retention, model digests, scaling, or fallback
    capacity.
 
 If the customer chose generated prerequisites, the agent presents a separate
 bootstrap plan for the state bucket/key, S3 lock file, KMS keys, synthetic source
-bucket, and qualification buckets before creating them. If existing
-prerequisites were selected, it verifies encryption, versioning, Object Lock
-where required, public-access blocks, ownership, and exact state-key
-availability. It never overwrites existing state or adopts a bucket based only
-on its name.
+bucket, qualification buckets, and empty encrypted operator secret before
+creating them. The bootstrap state is the sole owner of that secret metadata
+and does not create a secret value. If existing prerequisites were selected, it
+verifies encryption, versioning, Object Lock where required, public-access
+blocks, ownership, the operator-secret ARN/KMS key and version-presence metadata,
+and exact state-key availability without reading the value. A new secret must
+have zero versions before its one-time population; a resumed installation may
+already have a version and must use the customer's rotation process. The agent
+never overwrites existing state, adopts a bucket based only on its name, or
+imports the operator secret into AWS central.
 
 After a successful rehearsal, the customer may choose to store the sanitized
 non-secret configuration in its private repository. It must not contain:
@@ -1753,7 +1788,8 @@ Before Ore Heaphound:
 2. confirm the exact locked External Secrets and NVIDIA device-plugin releases,
    KEDA, metrics-server, Karpenter, and the EBS/EFS CSI drivers are healthy;
 3. confirm Terraform owns namespace `sddp`, the SecretStore, ExternalSecret,
-   encrypted operator secret metadata, and narrow Pod Identity;
+   metadata-only reference to the bootstrap-owned encrypted operator secret and
+   narrow Pod Identity;
 4. create the EFS-backed model claim;
 5. stage the exact approved model weights into the claim through a temporary
    reviewed Job;
@@ -1780,7 +1816,7 @@ customer-deploy/scripts/populate-operator-secret.sh \
   "$(terraform -chdir=infra/aws-central output -raw database_name)" \
   "$(terraform -chdir=infra/aws-central output -raw database_master_secret_arn)" \
   "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
-  "$(terraform -chdir=infra/aws-central output -raw data_kms_key_arn)"
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_kms_key_arn)"
 
 kubectl -n sddp wait \
   --for=condition=Ready externalsecret/ore-heaphound-operator \

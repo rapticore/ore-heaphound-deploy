@@ -44,8 +44,13 @@ output "scan_worker_role_arn" {
 }
 
 output "operator_secret_arn" {
-  description = "Encrypted operator secret object. Terraform intentionally does not manage its value."
-  value       = aws_secretsmanager_secret.operator.arn
+  description = "Bootstrap-owned encrypted operator secret referenced by AWS central. Neither its metadata nor value is owned by this state."
+  value       = data.aws_secretsmanager_secret.operator.arn
+}
+
+output "operator_secret_kms_key_arn" {
+  description = "Customer-managed KMS key protecting the bootstrap-owned operator secret."
+  value       = data.aws_secretsmanager_secret.operator.kms_key_id
 }
 
 output "operator_kubernetes_secret_name" {

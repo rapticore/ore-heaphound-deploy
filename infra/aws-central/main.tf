@@ -89,19 +89,19 @@ module "eks" {
   subnet_ids = module.vpc.private_subnets
 
   cluster_addons = {
-    coredns                = { most_recent = true }
-    kube-proxy             = { most_recent = true }
-    vpc-cni                = { most_recent = true }
-    eks-pod-identity-agent = { most_recent = true }
+    coredns                = { addon_version = var.eks_addon_versions["coredns"] }
+    kube-proxy             = { addon_version = var.eks_addon_versions["kube-proxy"] }
+    vpc-cni                = { addon_version = var.eks_addon_versions["vpc-cni"] }
+    eks-pod-identity-agent = { addon_version = var.eks_addon_versions["eks-pod-identity-agent"] }
     aws-ebs-csi-driver = {
-      most_recent = true
+      addon_version = var.eks_addon_versions["aws-ebs-csi-driver"]
       pod_identity_association = [{
         role_arn        = aws_iam_role.csi["ebs"].arn
         service_account = "ebs-csi-controller-sa"
       }]
     }
     aws-efs-csi-driver = {
-      most_recent = true
+      addon_version = var.eks_addon_versions["aws-efs-csi-driver"]
       pod_identity_association = [{
         role_arn        = aws_iam_role.csi["efs"].arn
         service_account = "efs-csi-controller-sa"
@@ -552,14 +552,11 @@ resource "aws_kms_alias" "data" {
   target_key_id = aws_kms_key.data.key_id
 }
 
-resource "aws_secretsmanager_secret" "operator" {
-  name                    = local.operator_secret_name
-  description             = "Ore Heaphound operator-owned deployment inputs"
-  kms_key_id              = aws_kms_key.data.arn
-  recovery_window_in_days = 30
-
-  # Secret values are populated through the approved encrypted process. No
-  # aws_secretsmanager_secret_version belongs in Terraform state.
+data "aws_secretsmanager_secret" "operator" {
+  # The prerequisite/bootstrap state is the sole owner of this empty encrypted
+  # object. Central reads metadata only so a fresh plan cannot duplicate,
+  # import, re-key, delete, or read the value of a bootstrap-owned secret.
+  name = local.operator_secret_name
 }
 
 resource "aws_iam_role" "external_secrets" {
@@ -576,13 +573,13 @@ data "aws_iam_policy_document" "external_secrets" {
       "secretsmanager:GetSecretValue",
       "secretsmanager:ListSecretVersionIds",
     ]
-    resources = [aws_secretsmanager_secret.operator.arn]
+    resources = [data.aws_secretsmanager_secret.operator.arn]
   }
 
   statement {
     sid       = "DecryptExactOperatorSecret"
     actions   = ["kms:Decrypt"]
-    resources = [aws_kms_key.data.arn]
+    resources = [data.aws_secretsmanager_secret.operator.kms_key_id]
 
     condition {
       test     = "StringEquals"
@@ -593,7 +590,7 @@ data "aws_iam_policy_document" "external_secrets" {
     condition {
       test     = "StringEquals"
       variable = "kms:EncryptionContext:SecretARN"
-      values   = [aws_secretsmanager_secret.operator.arn]
+      values   = [data.aws_secretsmanager_secret.operator.arn]
     }
   }
 }
@@ -682,7 +679,6 @@ resource "kubectl_manifest" "operator_external_secret" {
   })
 
   depends_on = [
-    aws_secretsmanager_secret.operator,
     kubectl_manifest.operator_secret_store,
   ]
 }

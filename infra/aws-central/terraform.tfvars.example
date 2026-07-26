@@ -1,9 +1,10 @@
 name               = "ore-heaphound-prod"
 region             = "us-west-2"
 anchor_bucket_name = "replace-with-globally-unique-object-lock-bucket"
-# For a fresh installation this may be omitted and defaults to /<name>/operator.
-# During reconciliation, set it to the exact existing metadata-only secret path
-# recorded in the approved deployment specification before importing that object.
+# The prerequisite/bootstrap state must already own an empty KMS-encrypted
+# secret. For a fresh installation this may be omitted and defaults to
+# /<name>/operator. During reconciliation, set it to the exact existing path.
+# AWS central references this object; never import it into aws-central state.
 # operator_secret_name = "/ore-heaphound/existing-deployment-id/operator"
 cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
 source_bucket_arns = [
@@ -12,3 +13,7 @@ source_bucket_arns = [
 
 # Spot is preferred. Set false only when jobs should wait indefinitely for Spot.
 enable_on_demand_fallback = true
+
+# Infrastructure tags are identity, not mutable software-version metadata.
+# During reconciliation copy the exact existing tag map from the approved
+# state/configuration. Do not replace an existing ReleaseTag with the new tag.
