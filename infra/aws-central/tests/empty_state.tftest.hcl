@@ -108,6 +108,17 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition = alltrue([
+      for name, manifest in kubectl_manifest.node_pool :
+      manifest.yaml_body != null && (
+        !startswith(name, "scan_") ||
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation")
+      )
+    ])
+    error_message = "Every scan NodePool must reject instance generations older than generation 5."
+  }
+
+  assert {
     condition = (
       var.system_node_min_size == 3 &&
       var.system_node_desired_size == 3 &&
@@ -133,10 +144,70 @@ run "empty_state_plan" {
 
   assert {
     condition = (
+      var.eks_addon_versions["amazon-cloudwatch-observability"] == "v6.4.0-eksbuild.1" &&
+      length(aws_iam_role_policy_attachment.observability) == 2
+    )
+    error_message = "Container metrics, logs, and traces require the exact CloudWatch Observability add-on and dedicated Pod Identity."
+  }
+
+  assert {
+    condition = (
       aws_eks_pod_identity_association.external_secrets.namespace == "external-secrets" &&
       aws_eks_pod_identity_association.external_secrets.service_account == "external-secrets"
     )
     error_message = "External Secrets must use its dedicated EKS Pod Identity."
+  }
+
+  assert {
+    condition = (
+      helm_release.load_balancer_controller.version == "3.4.2" &&
+      aws_eks_pod_identity_association.load_balancer_controller.service_account == "aws-load-balancer-controller"
+    )
+    error_message = "The managed production edge requires the exact locked AWS Load Balancer Controller and Pod Identity."
+  }
+
+  assert {
+    condition = (
+      aws_db_instance.postgres.performance_insights_enabled == true &&
+      aws_db_instance.postgres.monitoring_interval == 60 &&
+      toset(aws_db_instance.postgres.enabled_cloudwatch_logs_exports) == toset(["postgresql", "upgrade"])
+    )
+    error_message = "RDS production telemetry must remain enabled."
+  }
+
+  assert {
+    condition = alltrue(flatten([
+      for rule in aws_backup_plan.central.rule :
+      [for lifecycle in rule.lifecycle : lifecycle.delete_after == 35]
+    ]))
+    error_message = "The daily encrypted backup plan must select both RDS and EFS with the reviewed retention."
+  }
+
+  assert {
+    condition     = aws_s3_bucket_public_access_block.access_logs.restrict_public_buckets == true
+    error_message = "The managed NLB access-log bucket must stay private and authorize only AWS log delivery."
+  }
+
+  assert {
+    condition = (
+      aws_s3_bucket_public_access_block.anchors.restrict_public_buckets == true &&
+      aws_s3_bucket_object_lock_configuration.anchors.rule[0].default_retention[0].mode == "COMPLIANCE"
+    )
+    error_message = "The immutable anchor bucket must remain private and compliance-locked."
+  }
+
+  assert {
+    condition = (
+      local.eks_control_plane_log_types == toset([
+        "api",
+        "audit",
+        "authenticator",
+        "controllerManager",
+        "scheduler",
+      ]) &&
+      module.vpc.vpc_flow_log_destination_type == "cloud-watch-logs"
+    )
+    error_message = "EKS control-plane audit logs and complete VPC flow logging must remain enabled."
   }
 }
 

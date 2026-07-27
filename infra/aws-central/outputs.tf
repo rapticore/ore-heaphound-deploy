@@ -35,6 +35,19 @@ output "model_efs_id" {
   value = aws_efs_file_system.models.id
 }
 
+output "access_log_bucket" {
+  description = "S3 bucket authorized for the released NLB access-log prefix."
+  value       = aws_s3_bucket.access_logs.id
+}
+
+output "backup_vault_name" {
+  value = aws_backup_vault.central.name
+}
+
+output "load_balancer_controller_role_arn" {
+  value = aws_iam_role.load_balancer_controller.arn
+}
+
 output "control_plane_role_arn" {
   value = aws_iam_role.workload["control_plane"].arn
 }

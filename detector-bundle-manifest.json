@@ -63,7 +63,11 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "563bb195f4fcf1eb8237f6c1bc0d24e1919790e8973905a35f629d270913bd55"
+          "sha256": "a7c741851db3a61d5e58cc9fed2d887055d35045ce5f89b7f28c26b4d41d94c6"
+        },
+        {
+          "path": "internal/avrosafe/decoder.go",
+          "sha256": "906e0eff2223240f682c60ccb596a840ca5b99ded8417381e722132833afbce1"
         },
         {
           "path": "internal/extraction/archive.go",
@@ -87,7 +91,7 @@
         },
         {
           "path": "internal/extraction/structured.go",
-          "sha256": "7b4ec9e0cf306d7de802c6c88d8223ef355d60bbab61c9498bce2ab020fb30bd"
+          "sha256": "826626e35a6d30e808602becf58b7406a3d34152ac12457bb65d0da0e0a929d4"
         },
         {
           "path": "internal/extraction/tika.go",
@@ -126,7 +130,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "563bb195f4fcf1eb8237f6c1bc0d24e1919790e8973905a35f629d270913bd55"
+          "sha256": "a7c741851db3a61d5e58cc9fed2d887055d35045ce5f89b7f28c26b4d41d94c6"
         },
         {
           "path": "internal/secrets/kingfisher.go",

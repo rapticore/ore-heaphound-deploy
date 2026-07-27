@@ -1,10 +1,11 @@
 # Agent-generated, non-secret execution record for an LLM-operated deployment.
 # The customer is not expected to complete this file. The agent asks a short
 # guided set of questions, discovers safe values from authenticated read-only
-# APIs, resolves every auto/null field, and presents the result for approval.
+# APIs, resolves every auto/null field, completes read-only planning, and then
+# presents one complete pre-install decision packet for approval.
 # Credentials and secret values must never be placed in this file.
 
-schema_version: 2
+schema_version: 5
 deployment_id: auto
 operation: deploy # deploy or decommission
 deployment_action: new # new or resume; ignored for decommission
@@ -21,15 +22,11 @@ naming:
   random_suffix_length: 8
 
 authorization:
-  # The agent records explicit customer answers here. It must never infer or
-  # self-grant authorization. Read-only discovery is allowed after the
-  # customer starts the guided intake.
-  provision_infrastructure: false
-  install_or_upgrade_workloads: false
-  run_synthetic_scans: false
-  run_fault_injection: false
-  run_synthetic_remediation: false
-  decommission_ephemeral_resources: false
+  # The agent resolves every decision and completes read-only preflight/planning
+  # before asking one final deployment question. That one approval covers every
+  # selected action below. The agent must not add permission stops during
+  # installation unless the approved identity, plan, scope, or cost changes.
+  execute_deployment: false
   # Decommission is a separate destructive operation. Deployment approval does
   # not authorize any of the following actions.
   decommission_installation: false
@@ -41,6 +38,18 @@ authorization:
   maximum_estimated_monthly_cost_usd: 0
   approved_change_reference: null
   approved_by: []
+
+validation:
+  # These are selections, not separate authorization gates. The final
+  # deployment approval binds the whole resolved specification. The rapid
+  # production path keeps bounded smoke on and the disruptive extensions off.
+  bounded_synthetic_smoke: true
+  spot_interruption: false
+  fault_injection: false
+  rds_restore: false
+  efs_restore: false
+  migration_failure: false
+  synthetic_remediation: false
 
 aws:
   # The agent discovers the active short-lived identity, shows it to the
@@ -96,8 +105,12 @@ azure:
   deploy_remote_aks_worker: false
 
 network:
-  web_access: local_port_forward # local_port_forward or internal_dns
+  web_access: local_port_forward # local_port_forward, internal_dns, or restricted_public_tls
   web_hostname: null
+  web_certificate_arn: null
+  web_source_cidrs: []
+  nlb_access_log_bucket: auto_from_terraform
+  nlb_deletion_protection: true
   worker_gateway_hostname: null
   worker_gateway_source_cidrs: []
 
@@ -107,22 +120,24 @@ kubernetes:
   eks_kubernetes_version: auto_from_verified_lock
   eks_addon_versions: auto_from_verified_lock
   kyverno_chart_version: auto_from_verified_lock
+  aws_load_balancer_controller_chart_version: auto_from_verified_lock
   external_secrets_chart_version: auto_from_verified_lock
   nvidia_device_plugin_chart_version: auto_from_verified_lock
   karpenter_ami_alias: auto_from_verified_lock
   customer_values_file: auto_private_workdir
 
 model:
-  license_accepted: false
   model_reference: auto_from_verified_model_lock
   model_sha256: auto_from_verified_model_lock
   model_lock: model.lock.json
+  # License/source data is inventory from the signed lock, not a customer
+  # acceptance gate or a separate deployment authorization.
+  license_expression: auto_from_verified_model_lock
+  source_reference: auto_from_verified_model_lock
   runtime_published_sub_path: store
   runtime_read_only: true
   prompt_version: null
-  # Use the exact upstream source locked by the signed release. The agent may
-  # run the released staging helper only when license_accepted is true and the
-  # customer separately approves the claim/Job mutation.
+  # Use the exact upstream source locked by the signed release.
   staging_source_reference: auto_from_verified_model_lock
 
 secrets:
@@ -165,16 +180,14 @@ decommission:
 intake:
   generated_by_agent: true
   customer_answers_recorded: false
-  resolved_values_approved: false
+  pre_install_decisions_complete: false
+  decision_packet_sha256: null
   resolved_specification_sha256: null
 
 approvals:
-  # Each approved entry records approver, timestamp, displayed summary digest,
-  # saved plan digest when applicable, and the exact approved action.
-  resolved_inputs: null
-  infrastructure_plan: null
-  workload_install: null
-  synthetic_scan: null
-  fault_injection: null
-  synthetic_remediation: null
+  # The deployment record binds the complete pre-install decision packet,
+  # exact saved plan (or bootstrap plan plus strict central-plan contract),
+  # selected optional tests, maximum cost, approver, and timestamp.
+  deployment: null
+  # Removal is always a later destructive operation with its own exact plan.
   decommission: null

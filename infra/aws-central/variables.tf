@@ -23,17 +23,19 @@ variable "eks_addon_versions" {
   description = "Exact EKS managed add-on versions verified by prerequisites.lock.json. Update only through a new immutable release."
   type        = map(string)
   default = {
-    aws-ebs-csi-driver     = "v1.63.0-eksbuild.1"
-    aws-efs-csi-driver     = "v3.4.0-eksbuild.1"
-    coredns                = "v1.13.2-eksbuild.11"
-    eks-pod-identity-agent = "v1.3.10-eksbuild.3"
-    kube-proxy             = "v1.34.6-eksbuild.17"
-    vpc-cni                = "v1.22.4-eksbuild.3"
+    amazon-cloudwatch-observability = "v6.4.0-eksbuild.1"
+    aws-ebs-csi-driver              = "v1.63.0-eksbuild.1"
+    aws-efs-csi-driver              = "v3.4.0-eksbuild.1"
+    coredns                         = "v1.13.2-eksbuild.11"
+    eks-pod-identity-agent          = "v1.3.10-eksbuild.3"
+    kube-proxy                      = "v1.34.6-eksbuild.17"
+    vpc-cni                         = "v1.22.4-eksbuild.3"
   }
 
   validation {
     condition = (
       toset(keys(var.eks_addon_versions)) == toset([
+        "amazon-cloudwatch-observability",
         "aws-ebs-csi-driver",
         "aws-efs-csi-driver",
         "coredns",
@@ -43,16 +45,17 @@ variable "eks_addon_versions" {
       ]) &&
       alltrue([
         for addon, version in {
-          aws-ebs-csi-driver     = "v1.63.0-eksbuild.1"
-          aws-efs-csi-driver     = "v3.4.0-eksbuild.1"
-          coredns                = "v1.13.2-eksbuild.11"
-          eks-pod-identity-agent = "v1.3.10-eksbuild.3"
-          kube-proxy             = "v1.34.6-eksbuild.17"
-          vpc-cni                = "v1.22.4-eksbuild.3"
+          amazon-cloudwatch-observability = "v6.4.0-eksbuild.1"
+          aws-ebs-csi-driver              = "v1.63.0-eksbuild.1"
+          aws-efs-csi-driver              = "v3.4.0-eksbuild.1"
+          coredns                         = "v1.13.2-eksbuild.11"
+          eks-pod-identity-agent          = "v1.3.10-eksbuild.3"
+          kube-proxy                      = "v1.34.6-eksbuild.17"
+          vpc-cni                         = "v1.22.4-eksbuild.3"
         } : lookup(var.eks_addon_versions, addon, "") == version
       ])
     )
-    error_message = "eks_addon_versions must exactly match the six versions verified by this immutable release."
+    error_message = "eks_addon_versions must exactly match the seven versions verified by this immutable release."
   }
 }
 
@@ -133,6 +136,28 @@ variable "anchor_retention_days" {
   validation {
     condition     = var.anchor_retention_days >= 365
     error_message = "Production evidence retention must be at least 365 days."
+  }
+}
+
+variable "log_retention_days" {
+  description = "Retention for EKS control-plane, VPC flow, and NLB access logs."
+  type        = number
+  default     = 365
+
+  validation {
+    condition     = var.log_retention_days >= 90 && var.log_retention_days <= 3650
+    error_message = "log_retention_days must be between 90 and 3650."
+  }
+}
+
+variable "backup_retention_days" {
+  description = "Retention for daily encrypted RDS and EFS recovery points."
+  type        = number
+  default     = 35
+
+  validation {
+    condition     = var.backup_retention_days >= 35 && var.backup_retention_days <= 3650
+    error_message = "backup_retention_days must be between 35 and 3650."
   }
 }
 

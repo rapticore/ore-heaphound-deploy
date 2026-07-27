@@ -5,6 +5,12 @@ publishes signed containers and OCI Helm charts; the application, database,
 workers, model weights, credentials, evidence, and cloud resources run only in
 customer-owned accounts.
 
+For a production AWS/EKS installation, follow
+[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) after verifying the
+release. It adds the managed restricted TLS endpoint, DNS/ACM renewal flow,
+default-deny networking, disruption controls, telemetry, and restore evidence
+to this general topology guide.
+
 ## Supported v1 topology
 
 - Central control plane: Amazon EKS in three availability zones.
@@ -51,6 +57,38 @@ repository. Do not commit customer overlays, Terraform state, kubeconfigs, or
 credentials to either `main` or a release tag. Start an overlay by copying the
 matching released values file, then store and review that copy in the
 customer's private configuration repository.
+
+## Deployment authorization
+
+Starting the run permits all non-mutating preparation. The agent performs
+read-only discovery, artifact/model verification, Terraform planning, Helm
+rendering, and cost estimation without asking permission, then presents one
+pre-install decision packet. Use one explicit deployment authorization for
+that packet, including the exact Terraform plan, target account/region,
+routine workload actions, bounded smoke test, selected optional tests, and
+cost ceiling. That single authorization covers infrastructure and
+prerequisites, non-echoing secret population, locked-model staging, admission
+and workload chart installation, cleanup of temporary staging resources,
+bounded synthetic smoke, and every optional test selected in the packet. The
+agent must not pause for separate intake, license, node-size, model-staging,
+workload-installation, test, retry, or cleanup approvals.
+
+When a fresh stack needs bootstrap resources before the central Terraform plan
+can be produced, the same approval binds the exact bootstrap plan plus the
+signed central-module plan contract and cost ceiling. Continue automatically
+only when the later central plan matches that contract.
+
+Refreshing an expired short-lived session to the same verified identity,
+retrying transient reads, and waiting for bounded health convergence are
+operational retries, not new approval boundaries.
+
+A different account/region or identity, an unexpected plan mutation, cost
+above the approved ceiling, customer-data access outside the approved source
+scope, or an unavailable required security control stops the run as a material
+deviation. Spot interruption, fault injection, restore/failure tests, and
+remediation writes default off; if selected in the packet, they require no
+later permission prompt. Decommissioning remains a separate destructive
+operation and always requires its own exact review.
 
 ## 1. Select and verify a release
 
@@ -139,7 +177,7 @@ an encrypted remote state backend. Use Terraform exactly `1.15.8` and AWS CLI
 v2.7.0 or newer; the exec credential plugins obtain a fresh EKS token only
 after the cluster is ready.
 
-Before planning AWS central, complete the separately reviewed prerequisite
+Before planning AWS central, complete the prerequisite
 bootstrap procedure in [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 That state must own the exact empty KMS-encrypted operator secret selected by
 `operator_secret_name`. AWS central intentionally fails planning when the
@@ -149,18 +187,21 @@ value out of Terraform and command output.
 For a fresh installation, continue directly to Terraform planning below. For
 an existing healthy develop.7 rehearsal with a `2/2/6` system node group, do
 not apply a plan that represents `3/2/6`. The pinned EKS module intentionally
-ignores post-creation desired-size drift. Follow the two separately approved
-steps in
+ignores post-creation desired-size drift. Follow the exceptional legacy
+reconciliation steps in
 [Reconcile an existing develop rehearsal](STAGING_QUALIFICATION.md#reconcile-an-existing-develop-rehearsal):
 
 1. run the released `reconcile-system-node-capacity.sh check` mode and obtain
-   approval for its exact canonical request digest;
-2. run its approval-bound `apply` mode to reach `2/3/6`; and
+   its exact canonical request digest for the pre-install decision packet;
+2. after the single deployment approval, run its digest-bound `apply` mode to
+   reach `2/3/6`; and
 3. only then create a fresh Terraform plan whose sole resource change reaches
-   `3/3/6`.
+   `3/3/6`, continuing automatically when it matches the strict plan contract
+   in that same packet.
 
-The helper does not authorize Terraform apply, model staging, or workload
-installation.
+This exceptional live reconciliation remains digest-bound because it changes
+an already-running node group, but it does not create a second permission
+prompt. Fresh installations use the same single deployment authorization.
 
 ```sh
 test "$(terraform version -json | jq -r .terraform_version)" = "1.15.8"
@@ -201,8 +242,12 @@ The stack creates:
 - encrypted EFS model storage; and
 - separate IRSA roles for inventory/anchor writes and source-object reads; and
 - KEDA, metrics-server, and the required CSI drivers;
-- pinned Kyverno, External Secrets, and NVIDIA device-plugin releases;
-- six EKS managed add-ons pinned to `prerequisites.lock.json`;
+- pinned Kyverno, External Secrets, NVIDIA device-plugin, and AWS Load
+  Balancer Controller releases;
+- seven EKS managed add-ons, including CloudWatch Observability for container
+  metrics and logs, pinned to `prerequisites.lock.json`;
+- encrypted daily RDS/EFS backups, NLB access-log storage, complete VPC flow
+  logs, EKS control-plane logs, and RDS telemetry;
 - an immutable evaluated Karpenter AL2023 AMI selector;
 - a metadata-only reference to the bootstrap-owned encrypted operator
   Secrets Manager object and exact-resource Pod Identity; and
@@ -241,19 +286,19 @@ kubectl -n sddp wait \
 
 ```
 
-After the customer explicitly accepts the exact license in `model.lock.json`,
-resolve the EFS identifier into a private temporary manifest and run the
-released helper:
+The signed `model.lock.json` records the model source, license expression, and
+content digests as release inventory. It is not a customer acceptance gate.
+Resolve the EFS identifier into a private temporary manifest and run the
+released helper as part of the approved deployment:
 
 ```sh
 sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
   manifests/model-pvc-eks.yaml > /secure/customer-config/model-pvc.resolved.yaml
 
-export ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED=true
 export ORE_HEAPHOUND_EXPECTED_CONTEXT="$(kubectl config current-context)"
 scripts/stage-model-eks.sh \
   /secure/customer-config/model-pvc.resolved.yaml
-unset ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED ORE_HEAPHOUND_EXPECTED_CONTEXT
+unset ORE_HEAPHOUND_EXPECTED_CONTEXT
 ```
 
 The helper refuses unresolved manifests, a context mismatch, or a non-empty
@@ -264,9 +309,6 @@ temporary Job, NetworkPolicy, and ServiceAccount. Runtime pods mount only
 `store/`, with `readOnly: true` enforced on both the container mount and PVC
 volume source, and have no model-download egress. Rapticore does not distribute
 model weights.
-
-Keep `acceptModelLicenses: false` in the released values file. Only the
-customer-approved private values overlay may set it to true.
 
 The synchronized `sddp-production-operator-secrets` contains at least:
 

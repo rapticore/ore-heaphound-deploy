@@ -2,15 +2,11 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED=true ORE_HEAPHOUND_EXPECTED_CONTEXT=<context> $0 <resolved-model-pvc-manifest>" >&2
+  echo "usage: ORE_HEAPHOUND_EXPECTED_CONTEXT=<context> $0 <resolved-model-pvc-manifest>" >&2
   exit 2
 }
 
 [[ "$#" -eq 1 ]] || usage
-[[ "${ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED:-}" == "true" ]] || {
-  echo "Exact Apache-2.0 model-license acceptance has not been recorded." >&2
-  exit 1
-}
 [[ -n "${ORE_HEAPHOUND_EXPECTED_CONTEXT:-}" ]] || usage
 
 readonly STORAGE_MANIFEST="$1"

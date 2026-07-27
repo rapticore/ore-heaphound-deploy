@@ -7,6 +7,11 @@ synthetic S3 and GCS sources, customer-owned evidence custody, Spot-backed scan
 and local-model capacity, and the 12 checks required by the
 `aws-eks-single-tenant-v1` qualification profile.
 
+The rapid production-install path defaults to AWS/EKS with an S3 source only.
+GCS, remote workers, interruption/fault tests, restore/failure tests, and
+remediation are opt-in qualification extensions. Omitting them limits the
+qualification claim but does not block a healthy AWS/S3 installation.
+
 The customer owns and operates every runtime resource. Rapticore supplies
 signed release artifacts and the qualification tooling; it does not receive or
 host customer source data, database contents, credentials, or model weights.
@@ -39,7 +44,8 @@ six add-ons, and preserves the existing infrastructure tag map.
 Use only a newer immutable develop prerelease whose release workflow passed the
 Terraform deployment-kit and pinned-prerequisite gates. Its
 `prerequisites.lock.json` must identify exact Kyverno, External Secrets,
-NVIDIA device-plugin, EKS managed add-on, and EKS AMI releases and verified
+NVIDIA device-plugin, AWS Load Balancer Controller, EKS managed add-on, and
+EKS AMI releases and verified
 package hashes. That corrected prerelease is suitable for rehearsing this
 runbook, but it cannot be finalized as qualified:
 
@@ -92,8 +98,10 @@ The customer gives the agent:
 
 The customer does not complete the YAML template. The agent conducts a guided
 interview, performs read-only discovery, proposes defaults, generates the
-resolved specification in its private work area, and asks the customer to
-approve a concise summary before planning or changing anything.
+resolved specification in its private work area, and completes public-artifact
+verification and read-only planning without asking for permission. It then
+presents one complete pre-install decision packet and asks one deployment
+question before changing anything.
 
 The customer must use an approved enterprise or local agent configuration that
 does not train on, retain, or export terminal contents. The agent must not run
@@ -113,9 +121,20 @@ Give the LLM this instruction together with the path to this runbook:
 > let the customer choose an existing name or an automatically generated
 > collision-checked name, and explain only decisions that materially affect
 > cost, access, security, data retention, or supported scope. Generate the
-> non-secret execution specification yourself, show the customer the resolved
-> identity, region, names, scope, cost, and requested actions, and obtain
-> explicit approval before mutation. Execute the agent phases in order, use
+> non-secret execution specification yourself. Complete all safe read-only
+> discovery, public artifact verification, prerequisite checks, model/source
+> inventory, cost estimation, and Terraform/Helm planning before requesting
+> authorization. Consolidate every decision into one pre-install packet showing
+> the resolved identity, region, names, scope, exact plans or strict plan
+> contracts, cost ceiling, and selected tests. Ask one plain yes/no deployment
+> question. That approval covers the reviewed infrastructure plan, routine
+> secret population, locked-model staging, workload installation, temporary
+> cleanup, bounded smoke test, and any optional tests explicitly selected in
+> the packet. Do not create separate intake, license, model-staging, node-size,
+> workload, test, or retry approval stops. After approval, continue through
+> readiness reporting without another permission request unless an approved
+> material fact changes.
+> Execute the agent phases in order, use
 > only approved target accounts and regions, and maintain a value-free
 > deployment journal. Never print, copy, upload, or place credentials or secret
 > values in a prompt, command, log, report, Terraform file, or Helm values
@@ -129,6 +148,38 @@ Give the LLM this instruction together with the path to this runbook:
 > deletion authority from deployment authority, and never describe retained
 > custody data as deleted.
 
+### Rapid interaction contract
+
+For a production endpoint or a reconciliation of the current manual NLB, also
+apply [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md). Its discovery,
+managed-edge, DNS/ACM, account-baseline, backup, restore, and cleanup actions
+belong in the same single decision packet described here.
+
+For a deployment, use this interaction sequence:
+
+1. The customer's request to begin starts all non-mutating preparation. Clone
+   and verify the public GitHub release, pull/inspect public OCI artifacts,
+   inspect the locked model/source/license inventory, discover the active cloud
+   identity, and run read-only validation/planning without asking permission.
+2. Ask one compact configuration question with recommended defaults for any
+   material choice that discovery cannot resolve. Accept “use rapid defaults”
+   as the answer: AWS/EKS plus S3, generated collision-checked names, local
+   port-forward access, bounded synthetic smoke, on-demand fallback, and all
+   cross-cloud/disruptive/remediation extensions off.
+3. Resolve remaining safe values automatically, complete preflight, and
+   present one digest-bound pre-install decision packet.
+4. Ask one deployment question. A yes starts the continuous installation,
+   selected validation, cleanup, and readiness report.
+5. Do not ask for permission again. Stop only for a material deviation listed
+   in the authorization model; explain the deviation and produce a new packet
+   only when the proposed recovery changes approved scope, plan, identity,
+   security, or cost.
+
+Questions that obtain missing configuration are not approval boundaries.
+Bundle them before planning whenever possible; never turn routine progress,
+license metadata, credentials refresh, retries, health waits, or cleanup into
+a permission prompt.
+
 ### Guided customer interview
 
 Ask questions in short groups and adapt follow-ups to the answers. Do not
@@ -137,11 +188,11 @@ recite every template field. The minimum interview is:
 1. **Goal.** Ask whether this is a new develop rehearsal, a stable
    qualification, a resume, or a decommission. Recommend a new develop
    rehearsal for the first walkthrough.
-2. **Cloud scope.** Recommend AWS/EKS plus synthetic S3 and GCS sources for the
-   representative end-to-end rehearsal. Offer AWS/S3-only as a faster partial
-   smoke test, clearly stating that it cannot pass the GCS identity check or
-   qualify the target. Ask separately whether to add a remote GKE or AKS
-   worker; both are optional.
+2. **Cloud scope.** Recommend AWS/EKS plus an S3 source for the rapid initial
+   production installation. Offer GCS and a remote GKE or AKS worker only when
+   the customer wants cross-cloud qualification. State that AWS/S3-only cannot
+   pass the GCS identity check or the full cross-cloud qualification profile,
+   but it does not block AWS/S3 deployment readiness.
 3. **Identity and region.** Discover the authenticated cloud identity and show
    the account/project/subscription and role to the customer. Recommend
    `us-west-2` for AWS and `us-central1` for GCP unless customer policy,
@@ -151,9 +202,10 @@ recite every template field. The minimum interview is:
    rehearsal. If the customer wants internal DNS/TLS or remote workers, ask
    for the existing private zone, certificate/secret reference, and exact
    administrator or gateway CIDRs. Never default to public internet access.
-5. **Data and model.** Confirm synthetic data only, recommend the 100 GiB test,
-   and ask the customer to accept the exact model license and digest before
-   model staging. Never request model weights or source values in chat.
+5. **Data and model.** Confirm synthetic data only and recommend the 100 GiB
+   test. Show the exact locked model, source, license expression, and digest as
+   release inventory; do not ask for a separate license acceptance. Never
+   request model weights or source values in chat.
 6. **Cost and retention.** Recommend the smallest representative staging
    profile and 365-day evidence retention. Ask whether the customer has a
    ceiling now or wants the agent to propose one from the Terraform plan, which
@@ -163,13 +215,16 @@ recite every template field. The minimum interview is:
    approved resources/names or agent-generated names. Recommend generated
    dedicated names for staging. If existing resources are selected, ask only
    for their identifiers and prove they are suitable with read-only checks.
-8. **Optional destructive tests.** Ask separately about Spot interruption,
-   fault injection, and synthetic remediation. Default each to `false`.
+8. **Optional tests.** In the same choices summary, list Spot interruption,
+   fault injection, RDS restore, migration-failure, and synthetic remediation.
+   Default each to `false` for the rapid production path. A selected test is
+   included in the final deployment approval; it does not cause a later
+   permission question.
 9. **Approval identity.** Ask what customer name or approved corporate identity
    should be recorded as approver and whether an existing change-ticket
    reference should be used. If no ticket is required by customer policy,
-   propose a random `interactive-approval-<UTC>-<suffix>` reference and ask the
-   customer to accept it.
+   generate a random `interactive-approval-<UTC>-<suffix>` reference and include
+   it in the pre-install packet rather than asking a separate question.
 
 The agent should summarize inferred defaults in plain language and allow the
 customer to change them. “Use recommended defaults” is a valid answer for all
@@ -184,19 +239,23 @@ For a typical first rehearsal, the interaction should be close to:
 >
 > **Customer:** Yes.
 >
-> **Agent:** I recommend AWS/EKS with synthetic S3 and GCS sources, generated
-> dedicated names, local port-forward access, a 100 GiB synthetic test,
+> **Agent:** I recommend AWS/EKS with a synthetic S3 source, generated
+> dedicated names, local port-forward access, a bounded synthetic smoke test,
 > 365-day evidence retention, Spot workers with approved fallback, and no
-> remote cluster, fault injection, or remediation. Use those defaults?
+> remote cloud, interruption, restore, fault, or remediation tests. Use those
+> rapid defaults?
 >
 > **Customer:** Yes. Use the recommended defaults.
 >
 > **Agent:** What customer identity should I record as approver, and do you
 > have a change ticket or should I generate a session reference?
 
-The model-license acceptance and exact cost/apply approval still receive their
-own explicit questions. The agent then generates the specification and plan;
-the customer does not answer a field-by-field questionnaire.
+After planning, the agent presents the one pre-install decision packet and asks
+one explicit deployment question covering the exact plan, routine secret
+population, locked-model staging, chart installation, bounded smoke test, and
+any selected optional tests within the displayed cost ceiling. It does not
+stop for separate input, model, node-size, workload, test, or retry approvals.
+The customer does not answer a field-by-field questionnaire.
 
 ### Reconcile an existing develop rehearsal
 
@@ -226,13 +285,16 @@ remote state:
    `prerequisites.lock.json` before accepting the plan;
 8. if the live system-node scaling tuple is `2/2/6`, use only the released
    `scripts/reconcile-system-node-capacity.sh check` mode to generate the
-   canonical `2/3/6` EKS request and its SHA-256, then obtain separate approval
-   for that exact action summary;
-9. after approval, use the helper's `apply` mode with that exact approved
-   digest, wait for `2/3/6` and three Ready system nodes, and preserve its
-   sanitized result;
+   canonical `2/3/6` EKS request and its SHA-256, and include that exact action
+   in the pre-install decision packet;
+9. after the single deployment approval, use the helper's `apply` mode with
+   that bound digest, wait for `2/3/6` and three Ready system nodes, and
+   preserve its sanitized result;
 10. create a fresh saved Terraform plan and compare it with live state; and
-11. require a second, separate approval for that exact reconciliation plan.
+11. continue without another question only when the plan matches the strict
+    reconciliation contract in the approved packet: the system-node minimum
+    changes from `2` to `3`, the final tuple is `3/3/6`, and every other
+    resource is unchanged.
 
 The develop.7 prerequisite reconciliation added the pinned Kyverno, External
 Secrets, and NVIDIA releases, the narrow External Secrets Pod Identity, the
@@ -246,7 +308,7 @@ develop.7 rehearsal. Its pinned EKS module ignores post-creation
 Preserve that plan and revision 16 as read-only audit history.
 
 For a corrected release, reconciling the healthy develop.7 rehearsal requires
-two narrow, separately approved in-place system-node updates:
+two narrow in-place system-node updates covered by one deployment approval:
 
 1. the released helper updates only the live EKS desired size from `2/2/6` to
    `2/3/6`; and
@@ -271,7 +333,8 @@ The helper verifies the exact account, region, Kubernetes context, cluster,
 node-group identity, health, instance/AMI/capacity/labels, and live scaling
 tuple. It emits a canonical non-secret AWS request and `request_sha256`.
 Present that exact digest and the `2/2/6` to `2/3/6` action to the customer.
-Only after explicit approval may the agent run:
+Include it in the pre-install packet. Only after the one deployment approval
+may the agent run:
 
 ```bash
 export ORE_HEAPHOUND_SYSTEM_NODE_MIGRATION_APPROVED=true
@@ -283,18 +346,26 @@ unset ORE_HEAPHOUND_SYSTEM_NODE_MIGRATION_APPROVED
 unset ORE_HEAPHOUND_APPROVED_PAYLOAD_SHA256
 ```
 
-Never derive the approval variable silently from the check output. Record the
-customer's approval against the displayed digest. The helper re-runs all
+Derive the approval variable only from the immutable deployment record that
+binds the displayed digest; do not invent it from unapproved check output. The
+helper re-runs all
 preflight checks, refuses any live tuple except `2/2/6`, `2/3/6`, or `3/3/6`,
 uses an idempotent request token, waits for the EKS update, and requires three
 Ready system nodes. It neither changes Terraform state nor authorizes the
-subsequent Terraform apply.
+subsequent Terraform apply outside the strict contract in the same deployment
+record.
 
 After the helper reaches `2/3/6`, discard every earlier Terraform plan and
 create a fresh one. Its only resource mutation must be the existing system
 node group's `min_size: 2 -> 3`, with the complete planned tuple
 `2/3/6 -> 3/3/6`. Any plan that still shows `3/2/6`, or any additional
 mutation, is `BLOCKED_PREFLIGHT`.
+
+This two-step reconciliation is the only case in which the final saved plan
+cannot exist before the helper runs. The pre-install packet therefore binds
+the exact helper request digest and the strict Terraform contract above. A
+matching plan continues automatically; a non-matching plan stops as a changed
+material fact and requires a new packet.
 
 The reconciliation must not recreate the VPC, EKS cluster, RDS instance, EFS
 file system, evidence bucket, Terraform backend, or operator secret. It must
@@ -421,37 +492,62 @@ verifies the resulting signed index.
 
 ### Authorization model
 
-Read-only discovery, public artifact verification, credential identity checks,
-Terraform initialization, validation, and plan are allowed when the customer
-starts the run.
+Starting the deployment run authorizes non-mutating preparation: read-only
+discovery, public artifact and model/source verification, credential identity
+checks, Terraform initialization/validation/plan, Helm rendering, cost
+estimation, and generation of the pre-install decision packet. The agent does
+not request permission for those steps.
 
-Cloud creation and workload changes are allowed only when the completed
+Cloud creation and routine workload changes are allowed only when the completed
 agent-generated specification has:
 
-- the matching authorization field set to `true`;
+- `authorization.execute_deployment` set to `true`;
 - a non-empty customer change reference;
 - at least one named customer approver;
 - the exact expected cloud account/project and region; and
 - a non-zero approved cost ceiling.
 
-Fault injection, synthetic remediation, and decommissioning have independent
-authorization fields. Permission to deploy does not imply permission to
-delete, destroy, interrupt, or remediate. Operational decommission,
-deletion-protection override, synthetic-data deletion, final-snapshot deletion,
-post-retention custody deletion, and Terraform-state deletion are separate
-authorizations. The agent may record an authorization as `true` only after the
-customer explicitly approves that named action against the displayed resource
-and plan summary. It must never infer, recommend as already approved, or
-self-grant authorization.
+The one deployment authorization covers the exact reviewed Terraform plan,
+prerequisites, non-echoing secret population, locked-model staging, admission
+and workload chart installation, cleanup of temporary resources, and the
+bounded synthetic smoke test plus any optional tests selected in the resolved
+specification. License metadata is release inventory, not an approval field.
+The agent continues through these phases and readiness reporting without
+asking again.
 
-The agent must stop before an action when its authorization field is false. It
-must report `AWAITING_CUSTOMER_APPROVAL`, the exact proposed action, affected
-resources, estimated cost, and the approval it needs. It asks the customer a
-plain yes/no question; the customer never has to edit the specification. When
-approved, the agent records the answer, approver, timestamp, displayed plan
-digest, and change reference in a new immutable execution record. A later
-change to scope, name, identity, region, cost, or plan invalidates that
-approval.
+Refreshing an expired short-lived cloud session to the same verified identity,
+retrying transient read/pull operations with bounded backoff, and waiting for
+bounded health convergence do not invalidate approval and must not create a
+new customer stop. Reverify the identity after refresh.
+
+Spot-interruption testing, fault injection, RDS restore testing,
+migration-failure testing, and synthetic remediation have explicit selection
+fields. They default to `false`; when selected before installation, the one
+deployment approval covers them and the agent does not ask again. Permission
+to deploy never implies an optional action whose selection field is `false`.
+Decommissioning remains independent because it removes or destroys the
+installation.
+Operational decommission, deletion-protection override, synthetic-data
+deletion, final-snapshot deletion, post-retention custody deletion, and
+Terraform-state deletion are separate authorizations.
+
+Before mutation, the agent reports `AWAITING_CUSTOMER_APPROVAL` with the
+complete pre-install decision packet and asks one plain yes/no deployment
+question; the customer never edits the specification. When approved, the agent
+records the answer, approver, timestamp, packet digest, displayed plan
+digest—or bootstrap/helper digest plus the signed strict follow-on plan
+contract—complete action summary, selected optional tests, cost ceiling, and
+change reference in a new immutable execution record. It must never infer,
+recommend as already approved, or self-grant authorization.
+
+After that approval, the agent stops only for a material deviation: a different
+account, identity, region, release or artifact digest; a plan or action outside
+the approved packet/strict contract; cost above the ceiling; an unavailable
+required security control; an attempt to access out-of-scope customer data; or
+an unsafe failed apply that needs a newly reviewed recovery action. Ordinary
+credential refresh to the same identity, idempotent retries, model metadata,
+health waits, expected temporary resources, and cleanup are not permission
+boundaries.
 
 A decommission operation also requires a new, non-empty
 `decommission.approved_change_reference`, at least one named
@@ -502,7 +598,7 @@ Before network or cloud mutation:
 2. conduct the guided interview and record the customer's answers without
    secret values;
 3. safely parse `AGENT_DEPLOYMENT_SPEC.example.yaml` as an internal schema
-   template and require `schema_version: 2`;
+   template and require `schema_version: 5`;
 4. use authenticated read-only APIs to discover identity, region capability,
    existing resources, quotas, and name availability;
 5. resolve applicable `auto` values, generate collision-safe names, and leave
@@ -515,25 +611,27 @@ Before network or cloud mutation:
 8. reject `0.0.0.0/0`, `::/0`, raw secret-looking values, private-key blocks,
    access keys, tokens, passwords, ambiguous identities, or any unresolved
    required field;
-9. display a concise review containing the operation, release, account/project,
-   role, region, generated names, existing resources to reuse, network access,
-   cloud scope, model/license choice, retention, requested optional tests, and
-   preliminary cost assumptions; and
-10. ask the customer to approve or revise those resolved inputs.
+9. record the operation, release, account/project, role, region, generated
+   names, existing resources to reuse, network access, cloud scope,
+   model/source inventory, retention, optional-test selections, and preliminary
+   cost assumptions for the final pre-install decision packet; and
+10. continue directly into artifact verification and read-only planning without
+    an intake-approval stop.
 
-Do not show the full YAML unless the customer asks. On approval, record the
-customer-supplied approver identity, accepted change/session reference,
-timestamp, and set `intake.customer_answers_recorded` and
-`intake.resolved_values_approved` to `true`. Compute
-`intake.resolved_specification_sha256`, write a new immutable resolved-spec
-version, and show its digest.
+Do not show the full YAML unless the customer asks. Set
+`intake.customer_answers_recorded` and
+`intake.pre_install_decisions_complete` when every material choice is resolved.
+Compute `intake.resolved_specification_sha256`, then complete phases B–E up to
+the mutation boundary. Build a concise pre-install decision packet containing
+the specification digest, identity, release/artifact digests, exact saved
+plans or strict plan contracts, action inventory, optional-test selections,
+and cost ceiling; store its digest in `intake.decision_packet_sha256`.
 
-The intake approval authorizes only the resolved inputs and read-only
-planning. Mutation authorization remains `false` until the customer sees the
-corresponding saved plan or exact action summary. At that point, ask a plain
-yes/no approval question and create a new immutable specification version that
-records only the explicitly approved authorization fields. Never edit an
-already approved record in place.
+`authorization.execute_deployment` remains `false` until the customer sees
+that packet. Ask one plain yes/no deployment question and create a new
+immutable specification version. Once true, it carries through all selected
+actions in phases E–H without another permission stop. Never edit an approved
+record in place.
 
 For `operation: deploy`, require `mode` to be `develop_rehearsal` or
 `stable_qualification` and `deployment_action` to be `new` or `resume`. A
@@ -578,9 +676,12 @@ export AGENT_EVIDENCE="$AGENT_WORKDIR/evidence"
 mkdir -p "$AGENT_EVIDENCE"
 ```
 
-The agent records the path and removes it only when
-`authorization.decommission_ephemeral_resources` is true and the readiness
-report has already been copied into the customer-approved evidence location.
+The agent records the path. After a successful run, it may remove only this
+exact agent-created temporary directory once the readiness report has been
+copied to the customer-approved evidence location and its digest reverified.
+Routine cleanup is part of the deployment authorization; never use a broad or
+unresolved path. On failure, retain the private directory for audit unless the
+customer asks to remove it.
 
 #### B. Verify public GitHub access
 
@@ -626,15 +727,15 @@ If a clean plan exposes a defect in released Terraform:
 5. clone that tag into a fresh work directory and repeat public-artifact
    verification;
 6. create a new resolved-specification revision that changes the release tag,
-   source commit, manifest digest, and approval binding while retaining
+   source commit and manifest digest while retaining
    customer answers that remain true;
-7. obtain approval for the new read-only plan contract, then create fresh
-   prerequisite and platform plans; and
+7. create fresh prerequisite and platform plans, then place the corrected
+   release and new plan contract in one new pre-install decision packet; and
 8. publish a new readiness report that links to the blocked report through
    `supersedes` with reason `released_terraform_defect_corrected`.
 
 Never reuse or apply a plan produced from the defective tag. Continue to the
-apply approval gate only when the corrected tag produces a complete,
+single deployment approval gate only when the corrected tag produces a complete,
 apply-capable plan with no unexpected deletion or replacement.
 
 For a GitHub Release asset, use a request without an `Authorization` header and
@@ -940,25 +1041,30 @@ For an in-place reconciliation, also fail when:
 - the existing infrastructure `tags` map changes merely because a newer
   software release is being used; or
 - the system managed node group or its launch template changes without a
-  separately reviewed infrastructure reason;
-- a healthy develop.7 rehearsal has not completed the released, separately
-  approved `2/2/6 -> 2/3/6` helper before Terraform planning; or
+  reason disclosed in the pre-install decision packet;
+- a healthy develop.7 rehearsal has not completed the released,
+  approval-bound `2/2/6 -> 2/3/6` helper before follow-on Terraform planning;
+  or
 - the Terraform plan does not show the complete system-node tuple
   `2/3/6 -> 3/3/6` with every non-scaling attribute unchanged.
 
-If `authorization.provision_infrastructure` is false, stop with
-`AWAITING_CUSTOMER_APPROVAL` and show the customer:
+If `authorization.execute_deployment` is false, stop with
+`AWAITING_CUSTOMER_APPROVAL` once and show the customer:
 
 - the exact account/project, region, names, saved-plan digest, and resource
   counts;
 - estimated monthly and one-time cost, the proposed non-zero ceiling, and
   resources with continuing retention cost;
 - every create, update, replacement, and destroy; and
-- the requested infrastructure and prerequisite-creation authorizations.
+- the routine infrastructure, prerequisite, secret-population, locked-model
+  staging, chart-installation, temporary-cleanup, and bounded smoke-test
+  actions plus selected optional tests covered by the deployment
+  authorization.
 
-Ask whether to approve that exact plan. If the answer is yes, record the
-customer's response and cost ceiling in a new immutable execution record, set
-only `authorization.provision_infrastructure: true`, recompute the
+Ask whether to approve the complete pre-install decision packet. If the answer
+is yes, record the customer's response, packet digest, full action summary,
+optional-test selections, and cost ceiling in a new immutable execution
+record, set `authorization.execute_deployment: true`, recompute the
 specification digest, re-verify identity and that the saved plan digest did not
 change, then apply the saved plan without regenerating it. If the answer is no
 or ambiguous, make no change and remain `AWAITING_CUSTOMER_APPROVAL`.
@@ -970,11 +1076,12 @@ After apply:
 1. update kubeconfig for the exact cluster output and confirm its AWS account,
    region, and cluster name;
 2. verify the Terraform-managed Kyverno, External Secrets, NVIDIA plugin,
-   KEDA, Karpenter, metrics-server, and CSI releases against
+   AWS Load Balancer Controller, KEDA, Karpenter, metrics-server, and CSI releases against
    `prerequisites.lock.json`;
 3. require Kyverno admission-controller high availability, healthy External
    Secrets CRDs/webhooks, and the narrow EKS Pod Identity before continuing;
-4. stage the digest-bound model only when its license flag is true;
+4. stage the digest-bound model from `model.lock.json` as a routine deployment
+   action, retaining its source and license expression as inventory;
 5. populate the empty operator secret only through the released non-echoing
    helper or the customer's approved encrypted process, then confirm the
    Terraform-managed ExternalSecret becomes Ready without reading values;
@@ -983,13 +1090,11 @@ After apply:
 8. install admission policy before workloads; and
 9. use `--atomic` and bounded timeouts.
 
-If `authorization.install_or_upgrade_workloads` is false, stop after render
-with `AWAITING_CUSTOMER_APPROVAL`, summarize the exact release, chart/image
-digests, namespaces, endpoints, external-secret references, and expected
-workloads, and ask whether to install. On an explicit yes, create a new
-immutable approval record and set only
-`authorization.install_or_upgrade_workloads: true`. Recheck its digest before
-installing.
+Do not introduce another approval boundary between infrastructure, model
+staging, and workload installation. Before each mutation, recheck that the
+release, target identity, plan digest, chart/image digests, namespaces,
+external-secret references, expected workloads, and cost remain within the
+single approved deployment record. Stop only if one of those facts changes.
 
 The agent must not work around admission, NetworkPolicy, Pod Security, TLS,
 MFA, database-role, Object Lock, signature, or immutable-digest failures.
@@ -1010,20 +1115,25 @@ Perform sections 8 and 9 using only the approved synthetic corpus. At minimum:
 - network and IAM negative tests are denied;
 - worker and LLM ScaledObjects return to zero;
 - load causes workers and Spot nodes to scale up within the agreed window;
-- a Spot interruption reclaims work without missing logical findings or
-  persistent duplicates;
-- S3 and GCS synthetic scans complete with full coverage accounting;
+- when selected, a Spot interruption reclaims work without missing logical
+  findings or persistent duplicates;
+- S3 synthetic scans complete with full coverage accounting and, when GCS is
+  enabled in the approved packet, GCS synthetic scans do too;
 - offline report/signature verification passes;
 - anchor and qualification objects have the expected Object Lock metadata;
 - database and sanitized logs contain none of the synthetic canary values; and
-- synthetic remediation/rollback runs only when independently authorized.
+- optional disruptive or write-capable tests run only when selected in the
+  approved pre-install decision packet.
 
-If `authorization.run_synthetic_scans` is false, stop before submitting the
-corpus, show the bounded test size, source buckets, expected scale/cost, and
-evidence destination, and ask for explicit approval. Ask separately before
-fault injection or synthetic remediation and record only the specifically
-approved flags. A general “run the tests” answer does not authorize fault
-injection or remediation unless the summary named those actions.
+Run the bounded synthetic smoke corpus when it was included in the approved
+deployment specification and cost ceiling; it does not require another
+approval. If the customer excluded it during intake, skip it, record the
+limitation, and cap readiness accordingly instead of interrupting installation
+with a new question. Spot interruption, fault injection, and synthetic
+remediation remain optional and run only when their selection fields are true;
+RDS restore and migration-failure tests follow the same rule. These selections
+are authorized by the one deployment approval and do not cause a mid-run
+question.
 
 The agent must use bounded probes and redact evidence before retention. It must
 not send source text, findings, model responses, secrets, or packet payloads to
@@ -1089,7 +1199,7 @@ The agent may use only these terminal statuses:
 |---|---|
 | `BLOCKED_INPUT` | Specification is incomplete, unsafe, or contains secrets |
 | `BLOCKED_PUBLIC_ARTIFACT` | GitHub/ECR reachability, tag, hash, signature, architecture, attestation, or runtime verification failed |
-| `BLOCKED_PREFLIGHT` | Account, identity, permission, quota, state, network, DNS, TLS, secret reference, model license, or cost check failed |
+| `BLOCKED_PREFLIGHT` | Account, identity, permission, quota, state, network, DNS, TLS, secret reference, immutable model coordinate, or cost check failed |
 | `AWAITING_CUSTOMER_APPROVAL` | Read-only checks/plan passed but a required authorization field is false |
 | `DEPLOYMENT_FAILED` | Authorized apply/install or rollback failed |
 | `READY_FOR_PARTIAL_SMOKE` | Selected subset is healthy, but one or more representative target checks were intentionally omitted |
@@ -1266,6 +1376,16 @@ removal manifest and require its namespace, chart, version, and deployment
 labels to match the prior readiness report. For the central release names in
 this runbook, the bounded operation is:
 
+If the released managed public Service exists, NLB deletion protection must be
+disabled before Helm can remove it. Treat this as part of the separately
+approved `authorization.override_deletion_protection` operation: use the exact
+installed chart and private values, change only
+`web.publicService.deletionProtection` to `false`, review the rendered diff,
+upgrade atomically, and verify the exact NLB reports
+`deletion_protection.enabled=false`. Do not weaken its source allow-list, TLS,
+logging, or DNS during this step. Remove or redirect public DNS before the
+subsequent uninstall as specified by the approved removal manifest.
+
 ```bash
 helm status ore-heaphound --namespace "$NAMESPACE"
 helm status ore-heaphound-admission --namespace "$NAMESPACE"
@@ -1329,6 +1449,9 @@ dependencies in the original state:
 
 - `aws_s3_bucket.anchors` and its public-access, versioning, encryption, and
   Object Lock configuration;
+- `aws_s3_bucket.access_logs` and its policy, encryption, versioning, lifecycle,
+  and public-access controls for the customer's log-retention period;
+- the encrypted AWS Backup vault and retained RDS/EFS recovery points;
 - `aws_kms_key.data` and `aws_kms_alias.data`;
 - the RDS final snapshot created during instance deletion; and
 - the customer-owned qualification archive and Terraform backend.
@@ -1544,7 +1667,7 @@ The customer is responsible for:
 - cloud accounts, networking, DNS, certificates, budgets, and service quotas;
 - Terraform state, Kubernetes access, secrets, source identities, and model
   weights;
-- approving the model license and exact model digest;
+- reviewing the signed model/source/license inventory and exact model digest;
 - authorizing and retaining the synthetic qualification corpus; and
 - reviewing any retained evidence before it leaves the isolated test runner.
 
@@ -1556,8 +1679,8 @@ and the final signed index.
 The agent creates a non-secret session/change record from the guided answers.
 If customer policy requires an existing ticket, the agent asks for its
 reference. Otherwise it generates a random interactive approval reference and
-asks the customer to accept it before planning. The customer does not populate
-this table manually:
+places it in the final pre-install decision packet. The customer does not
+populate this table manually:
 
 | Field | Example |
 |---|---|
@@ -1576,14 +1699,19 @@ this table manually:
 Use a stable target ID. It is embedded into every receipt and cannot contain a
 secret or customer data.
 
-The agent presents and records explicit customer approval for:
+The agent presents and records one deployment approval covering:
 
 - expected EKS, NAT, RDS, EFS, GPU, and cross-cloud egress cost;
 - permitted administrator and CI CIDRs;
-- Spot interruption/fault testing;
-- RDS restore and migration-failure testing;
-- synthetic remediation writes and rollback; and
-- the model license and weight source.
+- the exact infrastructure plan and routine workload action summary;
+- locked-model staging, chart installation, and the bounded smoke corpus; and
+- the model digest and weight source as deployment inventory;
+- any selected Spot interruption/fault, RDS restore, migration-failure, or
+  synthetic-remediation test.
+
+The agent does not ask again for any action listed in that approved packet.
+Decommissioning or retention/deletion changes remain a later, separate
+destructive operation.
 
 ## 2. Prepare the customer accounts
 
@@ -1631,7 +1759,7 @@ bucket. It must not create or export a Google service-account key.
 Only when AKS was selected, discover the authenticated tenant and subscription
 and ask the customer to confirm them. The agent validates an existing
 customer-owned resource group, VNet/subnet, and source-storage scopes or
-includes dedicated prerequisites in a separate approved bootstrap plan. It
+includes dedicated prerequisites in the reviewed deployment plan. It
 must not delete or broaden access to shared parent resources. AKS workers use
 workload identity and generated installation-specific names; do not create a
 client secret or storage access key.
@@ -1750,11 +1878,16 @@ edit templates or replace markers. In its private work area, the agent:
    source buckets, domains, retention, model digests, scaling, or fallback
    capacity.
 
-If the customer chose generated prerequisites, the agent presents a separate
-bootstrap plan for the state bucket/key, S3 lock file, KMS keys, synthetic source
-bucket, qualification buckets, and empty encrypted operator secret before
-creating them. The bootstrap state is the sole owner of that secret metadata
-and does not create a secret value. If existing prerequisites were selected, it
+If the customer chose generated prerequisites, the agent includes the exact
+bootstrap plan for the state bucket/key, S3 lock file, KMS keys, synthetic
+source bucket, qualification buckets, and empty encrypted operator secret in
+the one deployment approval. Because the central plan depends on these
+resources, that approval also binds the signed central-module plan contract,
+resource bounds, and cost ceiling. After bootstrap apply, the agent creates the
+central plan and continues without another question only when it matches that
+contract exactly; any additional mutation or exceeded ceiling stops. The
+bootstrap state is the sole owner of the secret metadata and does not create a
+secret value. If existing prerequisites were selected, it
 verifies encryption, versioning, Object Lock where required, public-access
 blocks, ownership, the operator-secret ARN/KMS key and version-presence metadata,
 and exact state-key availability without reading the value. A new secret must
@@ -1861,35 +1994,33 @@ Before Ore Heaphound:
 3. confirm Terraform owns namespace `sddp`, the SecretStore, ExternalSecret,
    metadata-only reference to the bootstrap-owned encrypted operator secret and
    narrow Pod Identity;
-4. verify `model.lock.json` from the signed release and record explicit
-   acceptance of its exact model license;
+4. verify `model.lock.json` from the signed release and record its exact model,
+   source, license expression, and content digests as inventory;
 5. create the EFS-backed model claim and run the released staging helper;
 6. confirm its credentialless temporary Job verified every locked manifest,
    layer digest, and size before atomically publishing `store/`;
 7. confirm the helper deleted the Job, NetworkPolicy, and ServiceAccount and
    that runtime Helm output mounts `store/` read-only at both Kubernetes
    enforcement points; and
-8. record only the model coordinates and license decision, never model contents.
+8. record only the model/source/license coordinates, never model contents.
 
 ```bash
 sed "s/REPLACE_EFS_FILE_SYSTEM_ID/$(terraform -chdir=infra/aws-central output -raw model_efs_id)/" \
   manifests/model-pvc-eks.yaml > private/model-pvc.resolved.yaml
 
-export ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED=true
 export ORE_HEAPHOUND_EXPECTED_CONTEXT="$(kubectl config current-context)"
 scripts/stage-model-eks.sh private/model-pvc.resolved.yaml
-unset ORE_HEAPHOUND_MODEL_LICENSE_ACCEPTED ORE_HEAPHOUND_EXPECTED_CONTEXT
+unset ORE_HEAPHOUND_EXPECTED_CONTEXT
 
 kubectl -n sddp get pvc sddp-models-rox
 ```
 
-Do not run the helper until the customer separately approves exact model
-license acceptance and the claim/Job mutation. It refuses a non-empty claim; do
-not bypass that guard. Standard NetworkPolicy cannot select an FQDN, so this
-short-lived Job permits only DNS plus public TCP/443 while excluding private,
-loopback, link-local, multicast, and reserved ranges. It has no AWS identity,
-Kubernetes API token, application secret, or other credential. Runtime model
-pods retain deny-all egress.
+Run the helper under the single deployment authorization. It refuses a
+non-empty claim; do not bypass that guard. Standard NetworkPolicy cannot select
+an FQDN, so this short-lived Job permits only DNS plus public TCP/443 while
+excluding private, loopback, link-local, multicast, and reserved ranges. It
+has no AWS identity, Kubernetes API token, application secret, or other
+credential. Runtime model pods retain deny-all egress.
 
 For a new empty operator secret, use the released helper from the verified
 checkout. Its arguments are non-secret coordinates. It refuses to overwrite an
@@ -1983,15 +2114,16 @@ Create a corpus with opaque identifiers and no production values. Include:
 - versioned objects for stale-write and rollback tests; and
 - enough generated data to drive the agreed queue/Spot scale test.
 
-Place the same governed corpus revision in the synthetic S3 and GCS buckets.
-Record corpus, inventory, and expected-results digests. Never copy production
-documents into staging qualification.
+Place the governed corpus revision in the synthetic S3 bucket and, when GCS is
+enabled, place the same revision in the synthetic GCS bucket. Record corpus,
+inventory, and expected-results digests. Never copy production documents into
+staging qualification.
 
 Run the released `cloud-smoke` binary under the actual workload identities:
 
 - AWS list under the control-plane identity;
 - AWS version-bound read under the scan-worker identity;
-- GCS list/read through AWS workload federation; and
+- when GCS is enabled, GCS list/read through AWS workload federation; and
 - when remediation is in scope, create/conditional-write/rollback under a
   separate executor identity.
 

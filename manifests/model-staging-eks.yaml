@@ -1,5 +1,5 @@
 # One-time, credentialless model staging bundle. Apply only through the
-# released stage-model-eks.sh helper after exact license and mutation approval.
+# released stage-model-eks.sh helper as part of the approved deployment.
 # The helper deletes these temporary resources when the Job finishes.
 apiVersion: v1
 kind: ServiceAccount
