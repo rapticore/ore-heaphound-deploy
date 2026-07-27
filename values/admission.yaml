@@ -6,4 +6,4 @@ policy:
     - public.ecr.aws/n7r3j2c0/ore-heaphound-tika
   allowedThirdPartyImages:
     - ollama/ollama@sha256:57f573b47f1f71ebb445789f279fe3e596a8beab182f7cf486db9205bad87c5a
-  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.11
+  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.12

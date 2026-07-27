@@ -73,3 +73,23 @@ output "operator_kubernetes_secret_name" {
 output "external_secrets_role_arn" {
   value = aws_iam_role.external_secrets.arn
 }
+
+output "remediation_executor_role_arn" {
+  description = "Write-scoped executor identity. Empty when remediation is disabled."
+  value       = try(aws_iam_role.remediation_executor[0].arn, "")
+}
+
+output "quarantine_bucket" {
+  description = "Rollback snapshot destination. Empty when remediation is disabled."
+  value       = try(aws_s3_bucket.quarantine[0].id, "")
+}
+
+output "redacted_bucket" {
+  description = "Redacted-copy destination. Empty when remediation is disabled."
+  value       = try(aws_s3_bucket.redacted[0].id, "")
+}
+
+output "remediation_rollback_window" {
+  description = "Helm remediation.rollbackWindow matching the quarantine lifecycle deadline."
+  value       = var.remediation_enabled ? "${var.remediation_rollback_retention_days * 24}h" : ""
+}

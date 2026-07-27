@@ -107,6 +107,47 @@ Do not treat license acceptance as a deployment gate. Model identity, digest,
 source, and license metadata belong in release provenance and customer
 documentation, not in a runtime permission ceremony.
 
+## Governed remediation
+
+Remediation is off unless it is explicitly requested. When it is in scope, the
+same consolidated packet must additionally cover:
+
+1. `remediation_enabled = true` in Terraform, which creates the write-scoped
+   executor IRSA role and the versioned, KMS-encrypted quarantine and redacted
+   buckets. This is the only identity in the deployment permitted to write or
+   delete a source object; the control-plane and scan-worker roles stay
+   read-only.
+2. The explicit `values/remediation-eks.yaml` overlay, populated from the
+   `remediation_executor_role_arn`,
+   `quarantine_bucket`, `redacted_bucket`, and `data_kms_key_arn` outputs.
+3. The `sddp_executor` database role, created and granted by the `db-prepare`
+   Job from the operator secret. A fresh secret populated by this release
+   already has the executor credential. For an existing secret, run the
+   add-only `upgrade-operator-secret-for-remediation.sh` helper before Helm; the
+   one-time `populate-operator-secret.sh` intentionally refuses to overwrite an
+   existing version.
+
+The upgrade helper preserves every existing secret field, stages the augmented
+value under a private Secrets Manager label, and moves `AWSCURRENT` only if the
+version it read is still current. The old value remains `AWSPREVIOUS`. Wait for
+the ExternalSecret to synchronize the new version before starting the Helm
+upgrade: annotate `externalsecret/ore-heaphound-operator` with a changed
+`force-sync` value, then use `kubectl wait --for=jsonpath=...` to prove both
+executor keys exist as shown in
+[DESIGN_PARTNER.md](DESIGN_PARTNER.md). `Ready=True` by itself may still refer
+to the old synchronized version. The pre-upgrade `db-prepare` Job then creates
+or rotates the `sddp_executor` login before the executor Deployment rolls.
+
+The chart refuses to render when the executor role ARN matches the control-plane
+or scan-worker role. Do not work around that check by widening a role; correct
+the ARN.
+
+After install, prove the executor is healthy and prove dual control end to end:
+a redaction request, a dry run, an approval by a principal other than the
+requester, execution, an independent re-scan showing the content gone, and a
+verified rollback. See [DESIGN_PARTNER.md](DESIGN_PARTNER.md) for the full
+walkthrough.
+
 ## Existing develop rehearsal
 
 The current develop rehearsal may contain the test-only Service

@@ -278,13 +278,25 @@ customer-deploy/scripts/populate-operator-secret.sh \
   "$(terraform -chdir=infra/aws-central output -raw database_name)" \
   "$(terraform -chdir=infra/aws-central output -raw database_master_secret_arn)" \
   "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
-  "$(terraform -chdir=infra/aws-central output -raw operator_secret_kms_key_arn)"
+    "$(terraform -chdir=infra/aws-central output -raw operator_secret_kms_key_arn)"
 
 kubectl -n sddp wait \
   --for=condition=Ready externalsecret/ore-heaphound-operator \
   --timeout=5m
 
 ```
+
+`populate-operator-secret.sh` is a one-time bootstrap and refuses an existing
+secret version. When enabling remediation on an installation created by an
+older release, use
+`scripts/upgrade-operator-secret-for-remediation.sh` instead. It adds only the
+executor DSN/password through a compare-and-swap Secrets Manager version
+promotion, preserves every existing field, and leaves the prior value under
+`AWSPREVIOUS`. After that upgrade, force an External Secrets reconciliation and
+wait for both executor keys in the synchronized Kubernetes Secret; a pre-existing
+`Ready=True` condition does not prove the new version has arrived. The exact
+value-free commands are in
+[DESIGN_PARTNER.md](DESIGN_PARTNER.md#4-values).
 
 The signed `model.lock.json` records the model source, license expression, and
 content digests as release inventory. It is not a customer acceptance gate.
@@ -312,8 +324,10 @@ model weights.
 
 The synchronized `sddp-production-operator-secrets` contains at least:
 
-- `SDDP_DATABASE_URL`, built from the RDS endpoint and the AWS-managed master
-  secret, using TLS verification;
+- `SDDP_MIGRATION_DATABASE_URL`, `SDDP_DATABASE_URL`, and
+  `SDDP_WEB_DATABASE_URL`, using TLS verification;
+- `SDDP_EXECUTOR_DATABASE_URL` and `SDDP_EXECUTOR_ROLE_PASSWORD` when governed
+  remediation is enabled;
 - any cloud/source credentials that cannot use workload identity; and
 - notification or SSO secrets enabled in the selected values.
 

@@ -11,6 +11,10 @@ use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,
 DNS/ACM, and one-approval agent workflow, use
 [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+For a design-partner engagement on the partner's own data with governed
+remediation enabled, use [DESIGN_PARTNER.md](DESIGN_PARTNER.md); it layers the
+remediation infrastructure, values, walkthrough, and scope statement on top of
+the production runbook.
 For an LLM-operated walkthrough, give the agent that runbook. It asks the
 customer a short guided set of questions, proposes collision-checked defaults,
 and generates the internal execution record from

@@ -23,3 +23,10 @@ system_node_max_size     = 6
 # Infrastructure tags are identity, not mutable software-version metadata.
 # During reconciliation copy the exact existing tag map from the approved
 # state/configuration. Do not replace an existing ReleaseTag with the new tag.
+
+# Governed source remediation (FR-8). When true, Terraform creates the
+# write-scoped executor IRSA role plus the quarantine and redacted buckets.
+# Leave false for a discovery-and-triage-only deployment: no identity in the
+# whole deployment can then write or delete a source object.
+remediation_enabled                 = false
+remediation_rollback_retention_days = 7

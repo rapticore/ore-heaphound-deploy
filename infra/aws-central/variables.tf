@@ -256,3 +256,29 @@ variable "tags" {
     ManagedBy = "opentofu"
   }
 }
+
+variable "remediation_enabled" {
+  description = "Create the remediation executor identity and its quarantine/redacted buckets. When false the deployment has no source-write capability at all."
+  type        = bool
+  default     = false
+}
+
+variable "remediation_executor_service_account_name" {
+  type    = string
+  default = "sddp-remediation-executor"
+}
+
+variable "remediation_rollback_retention_days" {
+  description = "Rollback window and S3 lifecycle deadline for PHI-bearing quarantine snapshots."
+  type        = number
+  default     = 7
+
+  validation {
+    condition = (
+      var.remediation_rollback_retention_days >= 1 &&
+      var.remediation_rollback_retention_days <= 365 &&
+      floor(var.remediation_rollback_retention_days) == var.remediation_rollback_retention_days
+    )
+    error_message = "remediation_rollback_retention_days must be a whole number from 1 through 365."
+  }
+}

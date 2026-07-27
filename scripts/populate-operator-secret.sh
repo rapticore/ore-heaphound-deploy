@@ -74,6 +74,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 readonly MASTER_FILE="${WORK_DIR}/master.json"
 readonly RUNTIME_PASSWORD_FILE="${WORK_DIR}/runtime-password"
 readonly WEB_PASSWORD_FILE="${WORK_DIR}/web-password"
+readonly EXECUTOR_PASSWORD_FILE="${WORK_DIR}/executor-password"
 readonly OPERATOR_FILE="${WORK_DIR}/operator.json"
 
 aws secretsmanager get-secret-value \
@@ -90,16 +91,23 @@ jq -e '
 
 openssl rand -base64 48 >"$RUNTIME_PASSWORD_FILE"
 openssl rand -base64 48 >"$WEB_PASSWORD_FILE"
+# The remediation executor holds the only source-write identity, so it always
+# gets its own login (FR-8.1). Generating it unconditionally keeps the secret
+# shape stable whether or not remediation is enabled at install time; the key is
+# simply unused when remediation.databaseRole is empty.
+openssl rand -base64 48 >"$EXECUTOR_PASSWORD_FILE"
 
 jq -n \
   --slurpfile master "$MASTER_FILE" \
   --rawfile runtime_password "$RUNTIME_PASSWORD_FILE" \
   --rawfile web_password "$WEB_PASSWORD_FILE" \
+  --rawfile executor_password "$EXECUTOR_PASSWORD_FILE" \
   --arg host "$DATABASE_ENDPOINT" \
   --arg database "$DATABASE_NAME" '
     ($master[0]) as $admin |
     ($runtime_password | rtrimstr("\n")) as $runtime |
     ($web_password | rtrimstr("\n")) as $web |
+    ($executor_password | rtrimstr("\n")) as $executor |
     {
       SDDP_MIGRATION_DATABASE_URL:
         ("postgresql://" + ($admin.username | @uri) + ":" +
@@ -114,7 +122,12 @@ jq -n \
         ("postgresql://sddp_web:" + ($web | @uri) + "@" +
          $host + ":5432/" + ($database | @uri) +
          "?sslmode=verify-full"),
-      SDDP_WEB_ROLE_PASSWORD: $web
+      SDDP_WEB_ROLE_PASSWORD: $web,
+      SDDP_EXECUTOR_DATABASE_URL:
+        ("postgresql://sddp_executor:" + ($executor | @uri) + "@" +
+         $host + ":5432/" + ($database | @uri) +
+         "?sslmode=verify-full"),
+      SDDP_EXECUTOR_ROLE_PASSWORD: $executor
     }
   ' >"$OPERATOR_FILE"
 

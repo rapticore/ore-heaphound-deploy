@@ -1,0 +1,46 @@
+# Explicit governed-remediation overlay for the production EKS values.
+# Do not include this file for discovery-and-triage-only deployments; keep
+# remediation_enabled=false in Terraform in that mode.
+
+serviceAccount:
+  remediationExecutor:
+    name: sddp-remediation-executor
+    annotations:
+      # Terraform output: remediation_executor_role_arn.
+      eks.amazonaws.com/role-arn: REPLACE_REMEDIATION_EXECUTOR_ROLE_ARN
+
+# Nothing here can act on its own: every change is request -> dry run ->
+# independent approval(s) bound to the dry-run digest -> execution-time
+# revalidation -> verification, and every source-changing action has a rollback
+# snapshot for rollbackWindow.
+remediation:
+  enabled: true
+  # Rollback snapshots. Terraform output: quarantine_bucket.
+  quarantineBucket: REPLACE_QUARANTINE_BUCKET
+  # Dedicated least-privilege database role; production refuses a shared role.
+  databaseRole: sddp_executor
+  approvalTTL: 24h
+  # Terraform output: remediation_rollback_window. Keeping these equal prevents
+  # infrastructure lifecycle from expiring a still-authorized rollback.
+  rollbackWindow: REPLACE_REMEDIATION_ROLLBACK_WINDOW
+  aws:
+    region: REPLACE_AWS_REGION
+  redaction:
+    enabled: true
+    provider: s3
+    # Redacted copies. Terraform output: redacted_bucket.
+    redactedBucket: REPLACE_REDACTED_BUCKET
+    # Terraform output: data_kms_key_arn.
+    destinationEncryptionKey: REPLACE_DATA_KMS_KEY_ARN
+    # Your versioned identifier for the externally enforced destination
+    # controls (account/region, encryption, retention, residency). Change it
+    # whenever those controls change; it is bound into every approval.
+    destinationPolicyId: REPLACE_DESTINATION_POLICY_ID
+    # Fail-closed: the pinned local model inspects every ephemeral redacted
+    # output and blocks the write if any residual identifier remains.
+    llmValidation:
+      enabled: true
+      model: qwen2.5:7b-instruct
+      modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+      version: REPLACE_REDACTION_VALIDATOR_VERSION
+      dataPolicyId: REPLACE_LOCAL_PROCESSING_POLICY_ID

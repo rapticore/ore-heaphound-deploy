@@ -209,6 +209,95 @@ run "empty_state_plan" {
     )
     error_message = "EKS control-plane audit logs and complete VPC flow logging must remain enabled."
   }
+
+  assert {
+    condition = (
+      length(aws_iam_role.remediation_executor) == 0 &&
+      length(aws_s3_bucket.quarantine) == 0 &&
+      length(aws_s3_bucket.redacted) == 0 &&
+      output.remediation_executor_role_arn == "" &&
+      output.quarantine_bucket == "" &&
+      output.redacted_bucket == ""
+    )
+    error_message = "Remediation-disabled plans must create no write identity or remediation buckets."
+  }
+}
+
+run "remediation_enabled_plan" {
+  command = plan
+
+  variables {
+    name                                 = "ore-heaphound-ci"
+    region                               = "us-west-2"
+    anchor_bucket_name                   = "ore-heaphound-ci-anchor"
+    cluster_endpoint_public_access_cidrs = ["192.0.2.10/32"]
+    remediation_enabled                  = true
+    remediation_rollback_retention_days  = 7
+    source_bucket_arns                   = ["arn:aws:s3:::partner-source"]
+    source_kms_key_arns                  = ["arn:aws:kms:us-west-2:123456789012:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]
+  }
+
+  assert {
+    condition = (
+      length(aws_iam_role.remediation_executor) == 1 &&
+      length(aws_s3_bucket.quarantine) == 1 &&
+      length(aws_s3_bucket.redacted) == 1 &&
+      aws_s3_bucket_public_access_block.quarantine[0].restrict_public_buckets &&
+      aws_s3_bucket_public_access_block.redacted[0].restrict_public_buckets
+    )
+    error_message = "Remediation-enabled plans must create the isolated executor and private destination buckets."
+  }
+
+  assert {
+    condition = (
+      aws_s3_bucket_versioning.quarantine[0].versioning_configuration[0].status == "Enabled" &&
+      aws_s3_bucket_versioning.redacted[0].versioning_configuration[0].status == "Enabled" &&
+      aws_s3_bucket_lifecycle_configuration.quarantine[0].rule[0].expiration[0].days == 7 &&
+      aws_s3_bucket_lifecycle_configuration.quarantine[0].rule[0].noncurrent_version_expiration[0].noncurrent_days == 1 &&
+      output.remediation_rollback_window == "168h"
+    )
+    error_message = "Quarantine retention and the application rollback window must remain bound to the same deadline."
+  }
+
+  assert {
+    condition = (
+      toset(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "MutateApprovedSourceObjectsUnderApproval"
+        ]).actions) == toset([
+        "s3:DeleteObject",
+        "s3:PutObject",
+        "s3:PutObjectTagging",
+      ]) &&
+      contains(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "PurgeExpiredQuarantineVersions"
+      ]).actions, "s3:DeleteObjectVersion")
+    )
+    error_message = "Source mutation must preserve tags and must never gain permanent version deletion; exact version deletion belongs to quarantine."
+  }
+
+  assert {
+    condition = (
+      toset([
+        for statement in data.aws_iam_policy_document.quarantine_transport[0].statement :
+        statement.sid
+        ]) == toset([
+        "DenyInsecureTransport",
+        "DenyExplicitNonKMSEncryption",
+        "DenyExplicitWrongKMSKey",
+      ]) &&
+      toset([
+        for statement in data.aws_iam_policy_document.redacted_transport[0].statement :
+        statement.sid
+        ]) == toset([
+        "DenyInsecureTransport",
+        "DenyExplicitNonKMSEncryption",
+        "DenyExplicitWrongKMSKey",
+      ])
+    )
+    error_message = "Both remediation buckets must deny insecure transport and any explicit KMS downgrade or wrong-key write."
+  }
 }
 
 run "reject_unlocked_addon_version" {
