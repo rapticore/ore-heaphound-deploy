@@ -146,6 +146,22 @@ That state must own the exact empty KMS-encrypted operator secret selected by
 object is absent and never imports it. Verify only its metadata and keep its
 value out of Terraform and command output.
 
+For a fresh installation, continue directly to Terraform planning below. For
+an existing healthy develop.7 rehearsal with a `2/2/6` system node group, do
+not apply a plan that represents `3/2/6`. The pinned EKS module intentionally
+ignores post-creation desired-size drift. Follow the two separately approved
+steps in
+[Reconcile an existing develop rehearsal](STAGING_QUALIFICATION.md#reconcile-an-existing-develop-rehearsal):
+
+1. run the released `reconcile-system-node-capacity.sh check` mode and obtain
+   approval for its exact canonical request digest;
+2. run its approval-bound `apply` mode to reach `2/3/6`; and
+3. only then create a fresh Terraform plan whose sole resource change reaches
+   `3/3/6`.
+
+The helper does not authorize Terraform apply, model staging, or workload
+installation.
+
 ```sh
 test "$(terraform version -json | jq -r .terraform_version)" = "1.15.8"
 

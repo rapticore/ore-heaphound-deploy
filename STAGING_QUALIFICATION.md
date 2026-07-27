@@ -224,24 +224,77 @@ remote state:
    software release currently being reconciled;
 7. verify the six planned EKS add-on target versions equal
    `prerequisites.lock.json` before accepting the plan;
-8. create a fresh saved plan and compare it with live state; and
-9. require a separate approval for that exact reconciliation plan.
+8. if the live system-node scaling tuple is `2/2/6`, use only the released
+   `scripts/reconcile-system-node-capacity.sh check` mode to generate the
+   canonical `2/3/6` EKS request and its SHA-256, then obtain separate approval
+   for that exact action summary;
+9. after approval, use the helper's `apply` mode with that exact approved
+   digest, wait for `2/3/6` and three Ready system nodes, and preserve its
+   sanitized result;
+10. create a fresh saved Terraform plan and compare it with live state; and
+11. require a second, separate approval for that exact reconciliation plan.
 
 The develop.7 prerequisite reconciliation added the pinned Kyverno, External
 Secrets, and NVIDIA releases, the narrow External Secrets Pod Identity, the
 SecretStore and ExternalSecret binding, and changed the Karpenter NodeClass
 from a mutable AMI alias to the evaluated immutable alias.
 
-When reconciling that healthy develop.7 rehearsal to develop.8 or newer, the
-only expected infrastructure change is an in-place system-node scaling update:
+The `v0.1.0-develop.9` deployment kit is valid for a fresh installation but
+must not be used to apply a direct reconciliation plan from the healthy
+develop.7 rehearsal. Its pinned EKS module ignores post-creation
+`desired_size` changes, so the rejected plan represented `2/2/6` to `3/2/6`.
+Preserve that plan and revision 16 as read-only audit history.
 
-- `min_size`: `2` to `3`;
-- `desired_size`: `2` to `3`; and
-- `max_size`: remains `6`.
+For a corrected release, reconciling the healthy develop.7 rehearsal requires
+two narrow, separately approved in-place system-node updates:
+
+1. the released helper updates only the live EKS desired size from `2/2/6` to
+   `2/3/6`; and
+2. a fresh Terraform saved plan updates only the minimum from `2/3/6` to
+   `3/3/6`.
 
 This adds the reviewed CPU headroom for a concurrent application rollout and
 is expected to add approximately `$61.17/month` at the documented
 `us-west-2` reference rate. A fresh installation starts at `3/3/6`.
+
+Discover the system node-group name with read-only EKS APIs; do not ask the
+customer to supply it. Before any mutation, run:
+
+```bash
+export ORE_HEAPHOUND_EXPECTED_CONTEXT="$(kubectl config current-context)"
+scripts/reconcile-system-node-capacity.sh check \
+  "$AWS_REGION" "$AWS_ACCOUNT_ID" "$CLUSTER_NAME" "$SYSTEM_NODE_GROUP" \
+  >private/system-node-capacity.preflight.json
+```
+
+The helper verifies the exact account, region, Kubernetes context, cluster,
+node-group identity, health, instance/AMI/capacity/labels, and live scaling
+tuple. It emits a canonical non-secret AWS request and `request_sha256`.
+Present that exact digest and the `2/2/6` to `2/3/6` action to the customer.
+Only after explicit approval may the agent run:
+
+```bash
+export ORE_HEAPHOUND_SYSTEM_NODE_MIGRATION_APPROVED=true
+export ORE_HEAPHOUND_APPROVED_PAYLOAD_SHA256=sha256:REPLACE_APPROVED_DIGEST
+scripts/reconcile-system-node-capacity.sh apply \
+  "$AWS_REGION" "$AWS_ACCOUNT_ID" "$CLUSTER_NAME" "$SYSTEM_NODE_GROUP" \
+  >private/system-node-capacity.result.json
+unset ORE_HEAPHOUND_SYSTEM_NODE_MIGRATION_APPROVED
+unset ORE_HEAPHOUND_APPROVED_PAYLOAD_SHA256
+```
+
+Never derive the approval variable silently from the check output. Record the
+customer's approval against the displayed digest. The helper re-runs all
+preflight checks, refuses any live tuple except `2/2/6`, `2/3/6`, or `3/3/6`,
+uses an idempotent request token, waits for the EKS update, and requires three
+Ready system nodes. It neither changes Terraform state nor authorizes the
+subsequent Terraform apply.
+
+After the helper reaches `2/3/6`, discard every earlier Terraform plan and
+create a fresh one. Its only resource mutation must be the existing system
+node group's `min_size: 2 -> 3`, with the complete planned tuple
+`2/3/6 -> 3/3/6`. Any plan that still shows `3/2/6`, or any additional
+mutation, is `BLOCKED_PREFLIGHT`.
 
 The reconciliation must not recreate the VPC, EKS cluster, RDS instance, EFS
 file system, evidence bucket, Terraform backend, or operator secret. It must
@@ -887,7 +940,11 @@ For an in-place reconciliation, also fail when:
 - the existing infrastructure `tags` map changes merely because a newer
   software release is being used; or
 - the system managed node group or its launch template changes without a
-  separately reviewed infrastructure reason.
+  separately reviewed infrastructure reason;
+- a healthy develop.7 rehearsal has not completed the released, separately
+  approved `2/2/6 -> 2/3/6` helper before Terraform planning; or
+- the Terraform plan does not show the complete system-node tuple
+  `2/3/6 -> 3/3/6` with every non-scaling attribute unchanged.
 
 If `authorization.provision_infrastructure` is false, stop with
 `AWAITING_CUSTOMER_APPROVAL` and show the customer:

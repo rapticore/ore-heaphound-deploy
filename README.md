@@ -26,8 +26,8 @@ and are populated with the released non-echoing helper. The exact model,
 license layer, staging image, and content digests are locked in
 [model.lock.json](model.lock.json); the released staging helper publishes an
 atomically verified store that runtime pods mount read-only. Existing develop
-rehearsals should normally use the runbook's saved-plan reconciliation path,
-not decommission and recreation.
+rehearsals should normally use the runbook's approval-bound system-node helper
+followed by a fresh saved-plan reconciliation, not decommission and recreation.
 
 The `main` branch contains the current deployment templates and may retain
 `REPLACE_*` markers. For production, check out an immutable `vX.Y.Z` release
