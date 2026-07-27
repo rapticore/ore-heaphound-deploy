@@ -227,15 +227,29 @@ remote state:
 8. create a fresh saved plan and compare it with live state; and
 9. require a separate approval for that exact reconciliation plan.
 
-The expected reconciliation adds the pinned Kyverno, External Secrets, and
-NVIDIA releases, the narrow External Secrets Pod Identity, the SecretStore and
-ExternalSecret binding, and changes the Karpenter NodeClass from a mutable AMI
-alias to the evaluated immutable alias. It must not recreate the VPC, EKS
-cluster, RDS instance, EFS file system, evidence bucket, Terraform backend, or
-operator secret. It must not change the existing secret KMS key, any EKS
-managed add-on version, the system node group, or its launch template. Any
-unexplained destroy, replacement, state-key change, add-on drift, core
-infrastructure update, or resource adoption is `BLOCKED_PREFLIGHT`.
+The develop.7 prerequisite reconciliation added the pinned Kyverno, External
+Secrets, and NVIDIA releases, the narrow External Secrets Pod Identity, the
+SecretStore and ExternalSecret binding, and changed the Karpenter NodeClass
+from a mutable AMI alias to the evaluated immutable alias.
+
+When reconciling that healthy develop.7 rehearsal to develop.8 or newer, the
+only expected infrastructure change is an in-place system-node scaling update:
+
+- `min_size`: `2` to `3`;
+- `desired_size`: `2` to `3`; and
+- `max_size`: remains `6`.
+
+This adds the reviewed CPU headroom for a concurrent application rollout and
+is expected to add approximately `$61.17/month` at the documented
+`us-west-2` reference rate. A fresh installation starts at `3/3/6`.
+
+The reconciliation must not recreate the VPC, EKS cluster, RDS instance, EFS
+file system, evidence bucket, Terraform backend, or operator secret. It must
+not change the existing secret KMS key, any locked EKS managed add-on version,
+the system node-group launch template, instance type, AMI type, capacity type,
+labels, or maximum size. Any other node-group update, unexplained destroy,
+replacement, state-key change, add-on drift, core infrastructure update, or
+resource adoption is `BLOCKED_PREFLIGHT`.
 
 An older rehearsal may retain an unused DynamoDB lock table after switching to
 the S3 lock file. Do not delete it during reconciliation. Inventory and remove
