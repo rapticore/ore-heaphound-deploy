@@ -1644,8 +1644,10 @@ The minimum representative topology is:
 - a versioned, KMS-encrypted synthetic S3 source bucket;
 - a customer-owned GCP project with a synthetic GCS bucket and keyless
   AWS-to-Google workload federation;
-- stable system capacity on on-demand nodes;
-- scan and GPU local-model pools on Spot, both able to scale from zero; and
+- stable system capacity and one fixed GPU local-model baseline on on-demand
+  managed nodes;
+- scan pools and GPU replicas 2–4 on Karpenter Spot capacity, with only scan
+  workers able to scale to zero; and
 - a separate customer-owned Object Lock bucket/prefix for sanitized
   qualification evidence and receipts.
 
@@ -1960,7 +1962,9 @@ Have a second person review the plan. Confirm:
 - a Karpenter AMI alias matching the immutable alias in
   `prerequisites.lock.json`;
 - `scan-spot` and `llm-spot` pools with scale-to-zero capacity;
-- lower-priority on-demand fallback only if explicitly approved;
+- an EKS-managed `llm-baseline` on-demand GPU group fixed at one node;
+- no Karpenter-managed on-demand LLM fallback;
+- lower-priority on-demand scan fallback only if explicitly approved;
 - no unexpected public endpoint or broad IAM wildcard; and
 - no EKS bearer token or `aws_eks_cluster_auth` value in the saved plan.
 
@@ -2073,8 +2077,9 @@ test -z "$(grep -R 'REPLACE_' /tmp/ore-heaphound-*.yaml || true)"
 ```
 
 Review that every Ore Heaphound and Tika image uses an immutable digest, the
-signer subject matches the exact release tag, the scan and LLM workloads prefer
-Spot, and both KEDA objects have `minReplicaCount: 0`.
+signer subject matches the exact release tag, scan workloads prefer Spot, the
+Ollama workload prefers the fixed on-demand baseline, the scan KEDA object has
+`minReplicaCount: 0`, and the Ollama KEDA object has `minReplicaCount: 1`.
 
 Install admission policy first, then the platform:
 

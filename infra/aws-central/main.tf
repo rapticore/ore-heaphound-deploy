@@ -167,6 +167,35 @@ module "eks" {
         http_tokens                 = "required"
       }
     }
+    # The always-ready local-model replica is an availability baseline, not
+    # elastic burst capacity. Keeping it in an EKS-managed on-demand group
+    # prevents Karpenter consolidation from repeatedly replacing it with scarce
+    # Spot capacity. The separate llm-spot NodePool serves replicas 2+.
+    llm_baseline = {
+      instance_types = var.llm_baseline_instance_types
+      ami_type       = "AL2023_x86_64_NVIDIA"
+      capacity_type  = "ON_DEMAND"
+      min_size       = 1
+      desired_size   = 1
+      max_size       = 1
+      labels = {
+        "rapticore.io/workload" = "llm"
+        "rapticore.io/capacity" = "on-demand"
+      }
+      taints = {
+        llm = {
+          key    = "rapticore.io/workload"
+          value  = "llm"
+          effect = "NO_SCHEDULE"
+        }
+      }
+      metadata_options = {
+        http_endpoint               = "enabled"
+        http_protocol_ipv6          = "disabled"
+        http_put_response_hop_limit = 1
+        http_tokens                 = "required"
+      }
+    }
   }
 
   node_security_group_tags = {
@@ -493,23 +522,12 @@ resource "helm_release" "nvidia_device_plugin" {
   timeout          = 900
 
   values = [yamlencode({
-    # Karpenter exposes accelerator capacity labels. Avoid a privileged
-    # cluster-wide Node Feature Discovery DaemonSet solely for this plugin.
+    # Every workload=llm node is GPU-backed: one EKS-managed on-demand baseline
+    # plus Karpenter Spot burst nodes. Avoid a privileged cluster-wide Node
+    # Feature Discovery DaemonSet solely for this plugin.
     nfd = { enabled = false }
     nodeSelector = {
       "rapticore.io/workload" = "llm"
-    }
-    affinity = {
-      nodeAffinity = {
-        requiredDuringSchedulingIgnoredDuringExecution = {
-          nodeSelectorTerms = [{
-            matchExpressions = [{
-              key      = "karpenter.k8s.aws/instance-gpu-count"
-              operator = "Exists"
-            }]
-          }]
-        }
-      }
     }
     tolerations = [
       {
@@ -594,15 +612,6 @@ locals {
       categories = var.scan_instance_categories
       cpu        = "500"
       memory     = "2000Gi"
-    }
-    llm_fallback = {
-      workload   = "llm"
-      capacity   = "on-demand"
-      weight     = 10
-      families   = var.gpu_instance_families
-      categories = []
-      cpu        = "200"
-      memory     = "1000Gi"
     }
   } : {})
 }

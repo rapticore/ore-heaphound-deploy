@@ -128,6 +128,18 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition = (
+      toset(var.llm_baseline_instance_types) == toset(["g6.xlarge", "g5.xlarge"]) &&
+      toset(keys(kubectl_manifest.node_pool)) == toset([
+        "scan_spot",
+        "llm_spot",
+        "scan_fallback",
+      ])
+    )
+    error_message = "The release must keep one managed on-demand LLM baseline and use Karpenter only for Spot LLM burst capacity."
+  }
+
+  assert {
     condition     = data.aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
     error_message = "The central plan must reference the exact bootstrap-owned operator secret."
   }

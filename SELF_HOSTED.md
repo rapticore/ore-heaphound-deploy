@@ -18,9 +18,10 @@ to this general topology guide.
 - Other clouds: any conformant Kubernetes cluster that can provide KEDA,
   outbound TLS 1.3 connectivity, a ReadWriteMany model volume, and the common
   node labels described below.
-- Stable services use on-demand nodes. Scan workers and Ollama GPU pods prefer
-  Spot and scale to zero. An on-demand elastic fallback can be disabled when
-  jobs should wait for Spot capacity.
+- Stable services and one Ollama GPU replica use fixed on-demand managed nodes.
+  Scan workers and Ollama replicas 2–4 use Karpenter Spot capacity. Optional
+  on-demand fallback applies only to scan workers; GPU burst work waits when
+  Spot capacity is unavailable.
 
 Remote workers have no inbound Service and no PostgreSQL credentials. They open
 an outbound mTLS stream to the customer-owned EKS gateway.
@@ -236,7 +237,9 @@ The stack creates:
 
 - private EKS worker subnets and a stable three-node system pool sized for a
   concurrent application rollout;
-- Karpenter CPU and GPU Spot pools plus optional on-demand fallback pools;
+- one fixed EKS-managed on-demand GPU node for the always-ready local-model
+  replica;
+- Karpenter CPU and GPU Spot pools plus an optional on-demand scan fallback;
 - encrypted Multi-AZ PostgreSQL with 35-day PITR and deletion protection;
 - a KMS-encrypted S3 Object Lock bucket;
 - encrypted EFS model storage; and
@@ -443,13 +446,15 @@ KEDA selects the largest replica recommendation from queue count, estimated
 ready bytes, and oldest-ready age:
 
 - workers: 50 units or 1 GiB per replica, 0–20 replicas;
-- LLM: 40 units or 4 GiB per replica, 0–4 replicas; and
+- LLM: 40 units or 4 GiB per replica, 1–4 replicas; and
 - ready age: five minutes.
 
 Unknown-size work still scales on count and age. Cloud node autoscalers then
-provision nodes for the requested pods. Spot is expressed as preferred
-affinity; when fallback is enabled, on-demand pools can satisfy pods after Spot
-capacity fails.
+provision nodes for the requested pods. The EKS-managed on-demand GPU node is
+the non-consolidatable availability baseline. Karpenter provisions only Spot
+GPU nodes for replicas 2–4; if Spot is unavailable, the baseline continues
+processing while burst pods remain pending. When scan fallback is enabled,
+on-demand pools can satisfy scan-worker pods after Spot capacity fails.
 
 ## Operations
 

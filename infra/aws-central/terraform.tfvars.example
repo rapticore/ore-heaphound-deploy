@@ -11,8 +11,14 @@ source_bucket_arns = [
   "arn:aws:s3:::replace-with-approved-source-bucket",
 ]
 
-# Spot is preferred. Set false only when jobs should wait indefinitely for Spot.
+# One on-demand GPU node always hosts the baseline model replica. This toggle
+# controls only additional on-demand scan-worker fallback; GPU replicas 2+ use
+# Spot and wait when Spot is unavailable.
 enable_on_demand_fallback = true
+llm_baseline_instance_types = [
+  "g6.xlarge",
+  "g5.xlarge",
+]
 
 # Three system nodes provide enough requested CPU for a concurrent application
 # rollout. Change these only with a reviewed capacity calculation.

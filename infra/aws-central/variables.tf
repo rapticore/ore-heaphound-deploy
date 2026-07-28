@@ -162,7 +162,7 @@ variable "backup_retention_days" {
 }
 
 variable "enable_on_demand_fallback" {
-  description = "Allow elastic scan and LLM pods to use on-demand nodes when Spot cannot be provisioned."
+  description = "Allow elastic scan pods to use on-demand nodes when Spot cannot be provisioned. The single LLM baseline node is always on-demand; LLM burst capacity remains Spot-only."
   type        = bool
   default     = true
 }
@@ -208,6 +208,24 @@ variable "scan_instance_categories" {
 variable "gpu_instance_families" {
   type    = list(string)
   default = ["g5", "g6"]
+}
+
+variable "llm_baseline_instance_types" {
+  description = "Diversified on-demand GPU instance types for the fixed one-node LLM availability baseline."
+  type        = list(string)
+  default     = ["g6.xlarge", "g5.xlarge"]
+
+  validation {
+    condition = (
+      length(var.llm_baseline_instance_types) >= 1 &&
+      length(var.llm_baseline_instance_types) <= 8 &&
+      alltrue([
+        for instance_type in var.llm_baseline_instance_types :
+        can(regex("^[a-z0-9-]+\\.[a-z0-9]+$", instance_type))
+      ])
+    )
+    error_message = "llm_baseline_instance_types must contain 1-8 valid EC2 instance types."
+  }
 }
 
 variable "karpenter_ami_alias" {

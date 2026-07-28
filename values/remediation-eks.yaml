@@ -9,6 +9,13 @@ serviceAccount:
       # Terraform output: remediation_executor_role_arn.
       eks.amazonaws.com/role-arn: REPLACE_REMEDIATION_EXECUTOR_ROLE_ARN
 
+# The remediation executor validates its required local model during startup.
+# Keep one managed Ollama pod ready even when scan-queue triggers are idle.
+localModels:
+  ollama:
+    autoscaling:
+      minReplicas: 1
+
 # Nothing here can act on its own: every change is request -> dry run ->
 # independent approval(s) bound to the dry-run digest -> execution-time
 # revalidation -> verification, and every source-changing action has a rollback

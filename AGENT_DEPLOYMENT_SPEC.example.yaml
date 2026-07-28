@@ -64,6 +64,7 @@ aws:
   synthetic_source_bucket: auto
   synthetic_source_kms_key_arn: auto
   enable_on_demand_fallback: true
+  llm_baseline_instance_types: [g6.xlarge, g5.xlarge]
   system_node_min_size: 3
   system_node_desired_size: 3
   system_node_max_size: 6
