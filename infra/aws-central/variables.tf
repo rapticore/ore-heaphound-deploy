@@ -77,6 +77,18 @@ variable "vpc_cidr" {
   default = "10.40.0.0/16"
 }
 
+variable "s3_gateway_endpoint_policy_json" {
+  description = "Optional existing S3 gateway endpoint policy. Null preserves the AWS full-access default; customer overlays should supply the exact policy already recorded in state."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.s3_gateway_endpoint_policy_json == null || can(jsondecode(var.s3_gateway_endpoint_policy_json))
+    error_message = "s3_gateway_endpoint_policy_json must be null or valid JSON."
+  }
+}
+
 variable "namespace" {
   type    = string
   default = "sddp"

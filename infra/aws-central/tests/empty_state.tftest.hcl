@@ -98,6 +98,16 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition = (
+      aws_vpc_endpoint.s3.vpc_endpoint_type == "Gateway" &&
+      aws_vpc_endpoint.s3.service_name == "com.amazonaws.us-west-2.s3" &&
+      length(aws_vpc_endpoint.s3.route_table_ids) > 0 &&
+      length(module.vpc.private_route_table_ids) == length(data.aws_availability_zones.available.names)
+    )
+    error_message = "The release must own the existing private-route S3 gateway endpoint at aws_vpc_endpoint.s3."
+  }
+
+  assert {
     condition     = aws_db_instance.postgres.db_subnet_group_name == module.vpc.database_subnet_group_name
     error_message = "RDS must consume the DB subnet group owned by the VPC module."
   }
@@ -137,6 +147,15 @@ run "empty_state_plan" {
       ])
     )
     error_message = "The release must keep one managed on-demand LLM baseline and use Karpenter only for Spot LLM burst capacity."
+  }
+
+  assert {
+    condition = (
+      strcontains(kubectl_manifest.node_pool["llm_spot"].yaml_body, "\"karpenter.sh/capacity-type\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_spot"].yaml_body, "\"spot\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_spot"].yaml_body, "\"WhenEmpty\"")
+    )
+    error_message = "LLM burst must remain Spot-only and may consolidate only after the GPU node is empty."
   }
 
   assert {

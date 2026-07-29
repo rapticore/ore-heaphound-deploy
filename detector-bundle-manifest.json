@@ -70,6 +70,10 @@
           "sha256": "906e0eff2223240f682c60ccb596a840ca5b99ded8417381e722132833afbce1"
         },
         {
+          "path": "internal/discovery/driver.go",
+          "sha256": "8bec6c4c4b1d100b093099e79b62288d9e5ab8e77115af8ea81b8804693f8e4e"
+        },
+        {
           "path": "internal/extraction/archive.go",
           "sha256": "65f8d47e2e7a2a25a86b83a4237e38b21c4cb11afd71adc1431f2cd5a66a5d03"
         },
@@ -79,7 +83,7 @@
         },
         {
           "path": "internal/extraction/extract.go",
-          "sha256": "620495688371f03943ca6d2bfe39407f4b2a1219787d595b85ba3ed3d75d125f"
+          "sha256": "741b172c668a6c78cf1b1f6fdb0169cdc8f86515cc6d28a898d85aac674880d5"
         },
         {
           "path": "internal/extraction/ooxml.go",
@@ -91,15 +95,31 @@
         },
         {
           "path": "internal/extraction/structured.go",
-          "sha256": "826626e35a6d30e808602becf58b7406a3d34152ac12457bb65d0da0e0a929d4"
+          "sha256": "b7fc3dfe96c20fc4df7823efdb5cec60de724e0f2286b204f1ae1c4b7f6dac0b"
         },
         {
           "path": "internal/extraction/tika.go",
-          "sha256": "cdb9f4c5b5eac28266659998793e09ac25fd4270e45c9772e73ab52a7a5ca029"
+          "sha256": "f94433b42f137d6b6edfca16a0ed45f8e5a68d2b28884d0a0c34b183f7bd6091"
         },
         {
           "path": "internal/pdfnative/pdfnative.go",
           "sha256": "0212bb21399a0edc05bef65f0f585fa6233b2b8dfc3786abb938012f6fef8ddf"
+        },
+        {
+          "path": "internal/queue/queue.go",
+          "sha256": "4e2dcbfcfda60e37cf80ff10169da255a9e66b45724e62c363d1635b36395e98"
+        },
+        {
+          "path": "internal/scanner/handler.go",
+          "sha256": "c7e2cbe448a0cb22d36c183be61fffd4f2b6f8e441a0ee4ce1937a6b41e09b31"
+        },
+        {
+          "path": "internal/scanner/range_shards.go",
+          "sha256": "3345751b2f14471d1012d157a24b0ab58885b66938464adfcc702d9babcfe0b7"
+        },
+        {
+          "path": "internal/worker/worker.go",
+          "sha256": "a8e2e75db774490642a590c93919418c40c4b41a85cb1ed996e9f951fcef7fd9"
         }
       ]
     },
@@ -207,7 +227,7 @@
       "inputs": [
         {
           "path": "deploy/helm/sddp/templates/presidio.yaml",
-          "sha256": "985bdd4a57c86286eb6babeafa79b3ed494a3548122ae0483fa26bbc85d887dc"
+          "sha256": "9e74adaec0f091b5ded5d46f67e7880ef314f49e85f8ea9bcb9b40e8760c7829"
         },
         {
           "path": "internal/detection/presidio/presidio.go",

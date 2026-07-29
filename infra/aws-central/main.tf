@@ -103,6 +103,22 @@ module "vpc" {
   tags = var.tags
 }
 
+# This address intentionally matches the gateway endpoint already present in
+# customer production state. Omitting it from a release makes a full plan
+# propose deletion, forcing S3 traffic back through NAT and changing both the
+# network boundary and cost posture.
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.vpc.private_route_table_ids
+  policy            = var.s3_gateway_endpoint_policy_json
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-s3-gateway"
+  })
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.37.2"
@@ -661,8 +677,11 @@ resource "kubectl_manifest" "node_pool" {
         memory = each.value.memory
       }
       disruption = {
-        consolidationPolicy = "WhenEmptyOrUnderutilized"
-        consolidateAfter    = "60s"
+        # GPU model pods carry a warm model/cache and are expensive to restart.
+        # Spot interruptions remain recoverable, but routine consolidation only
+        # removes an empty LLM node; it never churns a busy underutilized node.
+        consolidationPolicy = each.value.workload == "llm" ? "WhenEmpty" : "WhenEmptyOrUnderutilized"
+        consolidateAfter    = each.value.workload == "llm" ? "10m" : "60s"
       }
     }
   })
