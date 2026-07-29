@@ -107,6 +107,38 @@ Do not treat license acceptance as a deployment gate. Model identity, digest,
 source, and license metadata belong in release provenance and customer
 documentation, not in a runtime permission ceremony.
 
+## Automatic release reconciliation
+
+Do not install an in-container updater, Watchtower, a floating image tag, or an
+`imagePullPolicy: Always` substitute for release management. A HeapHound
+release is one coordinated unit: Terraform, admission policy, charts, database
+migrations, application and extraction images, detector manifest, and model
+identity must advance together. Pulling only a newer container can create an
+unsupported mixed release and bypass the saved-plan safety boundary.
+
+An external customer-owned GitOps or installation agent may monitor the
+requested signed release channel and reconcile automatically up to the approval
+boundary. It must:
+
+1. resolve a new immutable annotated tag from public release metadata and
+   verify the release signature, checksums, provenance, chart digests, image
+   digests, detector manifest, and model lock;
+2. fetch the complete release kit and build a fresh full Terraform plan and
+   Helm render using the persistent private values overlay;
+3. preserve stateful/network controls and stop for a new approval if the plan
+   contains any delete, replacement, qualification downgrade, source-access
+   expansion, cost-class change, or other action outside the standing policy;
+4. take and verify the required database backup, apply admission policy first,
+   run the released migrations, and perform the Helm upgrade with `--atomic`;
+5. wait for readiness and execute the release smoke tests before marking the
+   reconciliation successful; and
+6. retain the prior signed release coordinates and use the documented rollback
+   procedure if health checks fail.
+
+Kubernetes then refreshes each Deployment automatically because the verified
+digest changes its pod template. Release availability alone must never mutate a
+running production workload.
+
 ## Governed remediation
 
 Remediation is off unless it is explicitly requested. When it is in scope, the

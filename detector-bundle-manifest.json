@@ -119,7 +119,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "a8e2e75db774490642a590c93919418c40c4b41a85cb1ed996e9f951fcef7fd9"
+          "sha256": "4888e7459d474881e167026bc0afb8dae82f16e94badb7afbd7e3c520a657ded"
         }
       ]
     },
@@ -158,7 +158,7 @@
         },
         {
           "path": "internal/secrets/secrets.go",
-          "sha256": "fa6698b7cee942271ca1d1a2caa3d5688950971e31918dd40ea8715f69b579be"
+          "sha256": "bc41105cbf39efdf5f40cd8efd68728bdeb5bdbd6e53c5c7feeab9d960273899"
         }
       ]
     },
