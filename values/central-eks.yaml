@@ -10,14 +10,23 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:099524c91d80b85f3164b925103dca7c199ff00ada552aceb602267bb6c4c483
+  digest: sha256:4a8819a50d3562fcbe2e7d154cfdd9a817dba9d0aec10972dce57a31abf8cfc6
 
 extraction:
   enabled: true
   denyEgress: true
+  autoscaling:
+    minReplicas: 2
+  nodeSelector:
+    rapticore.io/workload: scan
+  tolerations:
+    - key: rapticore.io/workload
+      operator: Equal
+      value: scan
+      effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:92654872358a49bddf5371a4369524d68f87a412e347b9311eb7fd4db25865df
+    digest: sha256:3b4cc4d1878f08573b10e37b51a4c15d37ca906628a0ad7c8d9d02dd2ed14c7f
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -35,11 +44,13 @@ anchors:
   retention: 8760h
 
 controlPlane:
+  replicas: 3
   staticAuth:
     enabled: true
 
 web:
   enabled: true
+  replicas: 3
   managedUsers: true
   secureCookie: true
   baseURL: https://REPLACE_APPLICATION_HOST
@@ -54,6 +65,8 @@ web:
     requiredRoles: admin,approver
 
 scanWorkers:
+  sharding:
+    enabled: true
   rulesetVersion: native:builtin-v6|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
   detectorManifestDigest: sha256:47464d5663f625363edb7f2524587a5109c337cb3b634e21cdeb525266294bfb
   contextualEngine:
@@ -72,6 +85,7 @@ scanWorkers:
     version: 1.106.0
   keda:
     enabled: true
+    maxReplicas: 200
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:
@@ -102,13 +116,23 @@ presidio:
     digest: sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9
   autoscaling:
     minReplicas: 1
+  nodeSelector:
+    rapticore.io/workload: scan
+  tolerations:
+    - key: rapticore.io/workload
+      operator: Equal
+      value: scan
+      effect: NoSchedule
 
 localModels:
   ollama:
     enabled: true
     models: [qwen2.5:7b-instruct]
     modelPull: { enabled: false }
-    autoscaling: { enabled: true }
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 24
     persistence:
       enabled: true
       existingClaim: sddp-models-rox
@@ -133,6 +157,16 @@ localModels:
                   # Keep one stable model endpoint on the fixed managed GPU
                   # baseline. Replicas 2+ consume the Spot-only llm NodePool.
                   values: [on-demand]
+
+resilience:
+  podDisruptionBudgets:
+    enabled: true
+    apiMinAvailable: 2
+    webMinAvailable: 2
+    extractionMinAvailable: 1
+  topologySpread:
+    enabled: true
+    whenUnsatisfiable: DoNotSchedule
 
 config:
   aws:
