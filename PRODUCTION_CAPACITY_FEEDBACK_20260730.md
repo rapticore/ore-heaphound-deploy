@@ -197,6 +197,70 @@ Recommended follow-up controls:
    pressure, but contextual detection or source-specific work can still govern
    end-to-end throughput.
 
+## Follow-up GPU, RDS I/O, and node-packing correction
+
+When Ollama requested eight replicas, Spot supplied four GPUs and left three
+replicas Pending after the fixed on-demand baseline. A lower-priority
+`llm-on-demand-burst` NodePool supplied exactly three additional single-GPU
+on-demand nodes. The resulting placement was four on-demand GPUs (one fixed
+baseline plus three burst) and four Spot GPUs, with Ollama 8/8 Ready. The
+NodePool uses `WhenEmpty` consolidation and a three-GPU limit so idle burst
+nodes terminate without routine model-pod churn.
+
+The database gp3 volume was the closest throughput constraint. AWS rejected a
+direct 3,000-to-12,000 IOPS change while the PostgreSQL volume remained below
+400 GiB. The approved online modification therefore preserves gp3, encryption,
+Single-AZ, the `db.m8g.4xlarge` class, and the 2,000-GiB autoscaling maximum
+while changing:
+
+- allocated storage: 100 to 400 GiB;
+- provisioned IOPS: 3,000 to 12,000;
+- provisioned throughput: 125 to 500 MiB/s.
+
+Allocated storage cannot be reduced. The change enters RDS storage
+optimization and must be monitored through completion.
+
+The scan fleet was then constrained to exact 16-vCPU `c8a` instances. This
+marks existing `c8a.8xlarge` and `c8a.16xlarge` NodeClaims drifted and lets
+Karpenter replace them gradually under the existing 10% disruption budget.
+The target packing is approximately 15-17 `c8a.4xlarge` nodes for the current
+143 scan-worker and 32 Tika pod requests, rather than 25 mixed scan nodes.
+Terraform now supports an exact `scan_instance_vcpus` list so this correction
+does not depend on an out-of-band live patch.
+
+After right-sizing, Karpenter could not pack the replacement nodes because the
+customer overlay rendered both extraction topology constraints with
+`whenUnsatisfiable: DoNotSchedule`. With 32 Tika replicas, the hostname
+constraint retained nearly one Tika pod per node. The live correction keeps
+the availability-zone constraint strict but changes only the hostname
+constraint to `ScheduleAnyway`, allowing Karpenter to pack replicas while
+still preferring host diversity.
+
+The current chart exposes one global `whenUnsatisfiable` value for both zone
+and hostname constraints. A follow-up release should expose separate zone and
+hostname settings so the production overlay can persist strict zone spreading
+and soft hostname spreading without a post-Helm Deployment patch.
+
+Karpenter 1.6.3 was then upgraded in place with only
+`SpotToSpotConsolidation=true`; the immutable chart digest was
+`sha256:5e16fd290be2d950f6a54465adb39709eddf7e95383a292010dccad2a64a7284`.
+Both controller replicas remained Ready. The fleet settled at 24
+`c8a.4xlarge` scan nodes (13 on-demand and 11 Spot), down from 25 mixed nodes
+and approximately 976 allocatable vCPU to approximately 381 allocatable vCPU.
+All 143 scan workers, 32 Tika replicas, and 20 Presidio replicas were Ready.
+
+The RDS modification completed at `2026-07-30T19:58:35Z`. The first
+nine-minute post-change sample showed:
+
+- write latency average 5.7 ms, down from 32.0 ms before the change;
+- latest disk queue depth 1.52;
+- average AAS 3.44;
+- average `LWLock:WALWrite` 0.16 AAS;
+- average relation-lock wait 0.80 AAS.
+
+The storage change materially reduced the I/O and WAL-write portion of the
+bottleneck. Relation-lock contention remains a separate query-level issue.
+
 ## Rollback
 
 If error rates, dead letters, DB load, or cost become unacceptable:
@@ -209,5 +273,5 @@ If error rates, dead letters, DB load, or cost become unacceptable:
 4. Wait for Karpenter's normal disruption budget and consolidation. Do not
    delete queue rows or manually terminate healthy worker pods.
 
-No database, source-access, S3 endpoint, RDS, application image, detector,
-model, admission, or secret change was part of this experiment.
+No source-access, S3 endpoint, application image, detector, model, admission,
+or secret change was part of these capacity experiments.

@@ -387,6 +387,9 @@ resource "helm_release" "karpenter" {
     settings = {
       clusterName       = module.eks.cluster_name
       interruptionQueue = module.karpenter.queue_name
+      featureGates = {
+        spotToSpotConsolidation = var.enable_spot_to_spot_consolidation
+      }
     }
     serviceAccount = {
       name = module.karpenter.service_account
@@ -628,7 +631,19 @@ locals {
       cpu        = "500"
       memory     = "2000Gi"
     }
-    }, var.enable_on_demand_fallback ? {
+    }, var.enable_llm_on_demand_burst ? {
+    llm_on_demand_burst = {
+      workload   = "llm"
+      capacity   = "on-demand"
+      weight     = 10
+      families   = var.gpu_instance_families
+      categories = []
+      cpu        = tostring(var.llm_on_demand_burst_gpu_limit * 16)
+      memory     = "${var.llm_on_demand_burst_gpu_limit * 64}Gi"
+      gpu        = tostring(var.llm_on_demand_burst_gpu_limit)
+      gpu_count  = "1"
+    }
+    } : {}, var.enable_on_demand_fallback ? {
     scan_fallback = {
       workload   = "scan"
       capacity   = "on-demand"
@@ -677,11 +692,24 @@ resource "kubectl_manifest" "node_pool" {
               key      = "karpenter.k8s.aws/instance-generation"
               operator = "Gt"
               values   = [tostring(var.scan_min_instance_generation - 1)]
-            },
+            }
+            ] : [], each.value.workload == "scan" && length(var.scan_instance_vcpus) > 0 ? [
+            {
+              key      = "karpenter.k8s.aws/instance-cpu"
+              operator = "In"
+              values   = [for vcpu in var.scan_instance_vcpus : tostring(vcpu)]
+            }
+            ] : each.value.workload == "scan" ? [
             {
               key      = "karpenter.k8s.aws/instance-cpu"
               operator = "Gt"
               values   = [tostring(var.scan_min_instance_vcpu - 1)]
+            }
+            ] : [], try(each.value.gpu_count, null) != null ? [
+            {
+              key      = "karpenter.k8s.aws/instance-gpu-count"
+              operator = "In"
+              values   = [each.value.gpu_count]
             }
             ] : [], length(each.value.families) > 0 ? [
             { key = "karpenter.k8s.aws/instance-family", operator = "In", values = each.value.families }
@@ -690,10 +718,12 @@ resource "kubectl_manifest" "node_pool" {
           ])
         }
       }
-      limits = {
+      limits = merge({
         cpu    = each.value.cpu
         memory = each.value.memory
-      }
+        }, try(each.value.gpu, null) != null ? {
+        "nvidia.com/gpu" = each.value.gpu
+      } : {})
       disruption = {
         # GPU model pods carry a warm model/cache and are expensive to restart.
         # Spot interruptions remain recoverable, but routine consolidation only
@@ -895,9 +925,11 @@ resource "aws_db_instance" "postgres" {
   engine                      = "postgres"
   engine_version              = "16.13"
   instance_class              = var.database_instance_class
-  allocated_storage           = 100
-  max_allocated_storage       = 2000
+  allocated_storage           = var.database_allocated_storage
+  max_allocated_storage       = var.database_max_allocated_storage
   storage_type                = "gp3"
+  iops                        = var.database_iops
+  storage_throughput          = var.database_storage_throughput
   storage_encrypted           = true
   kms_key_id                  = aws_kms_key.data.arn
   db_name                     = var.database_name
@@ -921,6 +953,29 @@ resource "aws_db_instance" "postgres" {
   performance_insights_retention_period = 7
   monitoring_interval                   = 60
   monitoring_role_arn                   = aws_iam_role.rds_monitoring.arn
+
+  lifecycle {
+    precondition {
+      condition = (
+        (
+          var.database_allocated_storage < 400 &&
+          var.database_iops == 3000 &&
+          var.database_storage_throughput == 125
+          ) || (
+          var.database_allocated_storage >= 400 &&
+          var.database_iops >= 12000 &&
+          var.database_storage_throughput >= 500 &&
+          var.database_storage_throughput / var.database_iops <= 0.25
+        )
+      )
+      error_message = "PostgreSQL gp3 is fixed at 3,000 IOPS/125 MiB/s below 400 GiB; striped storage at 400 GiB or above requires at least 12,000 IOPS/500 MiB/s."
+    }
+
+    precondition {
+      condition     = var.database_max_allocated_storage >= var.database_allocated_storage
+      error_message = "database_max_allocated_storage must be at least database_allocated_storage."
+    }
+  }
 }
 
 locals {

@@ -383,6 +383,14 @@ run "high_throughput_scan_pool" {
     scan_instance_families               = ["c8a"]
     scan_min_instance_generation         = 8
     scan_min_instance_vcpu               = 16
+    scan_instance_vcpus                  = [16]
+    enable_llm_on_demand_burst           = true
+    llm_on_demand_burst_gpu_limit        = 3
+    enable_spot_to_spot_consolidation    = true
+    database_allocated_storage           = 400
+    database_max_allocated_storage       = 2000
+    database_iops                        = 12000
+    database_storage_throughput          = 500
   }
 
   assert {
@@ -394,10 +402,30 @@ run "high_throughput_scan_pool" {
         strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
         strcontains(manifest.yaml_body, "\"7\"") &&
         strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu") &&
-        strcontains(manifest.yaml_body, "\"15\"")
+        strcontains(manifest.yaml_body, "\"16\"")
       )
     ])
-    error_message = "The high-throughput scan profile must render c8a-only, generation-8+, 16-vCPU+ requirements for every scan NodePool."
+    error_message = "The high-throughput scan profile must render c8a-only, generation-8+, exact 16-vCPU requirements for every scan NodePool."
+  }
+
+  assert {
+    condition = (
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"on-demand\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"nvidia.com/gpu\"") &&
+      var.llm_on_demand_burst_gpu_limit == 3 &&
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"WhenEmpty\"")
+    )
+    error_message = "The optional on-demand Ollama burst pool must be bounded to three single-GPU nodes and consolidate only when empty."
+  }
+
+  assert {
+    condition = (
+      aws_db_instance.postgres.allocated_storage == 400 &&
+      aws_db_instance.postgres.max_allocated_storage == 2000 &&
+      aws_db_instance.postgres.iops == 12000 &&
+      aws_db_instance.postgres.storage_throughput == 500
+    )
+    error_message = "The high-throughput RDS profile must preserve the reviewed 400-GiB, 12,000-IOPS, 500-MiB/s gp3 settings."
   }
 }
 
