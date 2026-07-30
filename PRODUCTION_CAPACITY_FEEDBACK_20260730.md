@@ -7,7 +7,7 @@ no credentials, source paths, findings, object names, or secret values.
 
 ## Objective
 
-1. Prefer current-generation AMD compute instances for scan workloads.
+1. Prefer current-generation AMD general-purpose instances for scan workloads.
 2. Reject scan nodes with fewer than 16 vCPU.
 3. Increase private Tika extraction capacity because workers were restarting
    while waiting for the saturated extraction service.
@@ -45,7 +45,7 @@ immediate constraints.
 The AWS deployment module now exposes:
 
 ```hcl
-scan_instance_families       = ["c8a"]
+scan_instance_families       = ["m8a"]
 scan_min_instance_generation = 8
 scan_min_instance_vcpu       = 16
 ```
@@ -67,7 +67,7 @@ The implementation uses the Karpenter requirements:
 ```yaml
 - key: karpenter.k8s.aws/instance-family
   operator: In
-  values: [c8a]
+  values: [m8a]
 - key: karpenter.k8s.aws/instance-generation
   operator: Gt
   values: ["7"]
@@ -77,7 +77,7 @@ The implementation uses the Karpenter requirements:
 ```
 
 Terraform validation and mocked plan tests cover both the backward-compatible
-defaults and the high-throughput c8a profile.
+defaults and the high-throughput m8a profile.
 
 `values/high-throughput-extraction-eks.yaml` records the reusable Helm portion
 of the experiment: 24 minimum Tika replicas and a stage ceiling of 32. It is an
@@ -85,7 +85,19 @@ optional additive overlay rather than a new global production default.
 
 `values/high-throughput-workers-eks.yaml` records the follow-up bounded worker
 experiment: 120 small, 8 standard, and 15 large minimum replicas, for 143
-worker pods and 542 worker processes.
+worker pods and 542 worker processes. Its production-calibrated requests are:
+
+- small: 100m CPU and 256 MiB memory;
+- standard: 1.5 CPU and 1.5 GiB memory;
+- large: 2 CPU and 16 GiB memory;
+- Presidio: 1 CPU and 1.25 GiB memory;
+- Ollama: 2.5 CPU and 11 GiB memory.
+
+`values/high-throughput-extraction-eks.yaml` retains 24-32 Tika replicas while
+setting each request to 500m CPU and 2 GiB memory.
+Both complete catalog lists use
+`builtin-balanced-m8a-v3-tika32` so the recorded capacity identity changes
+with the resource and instance profile.
 
 An attempted same-process-count rebalance to 96 small, 32 standard, and 15
 large was rejected by the signed v0.1.0-develop.22 chart's production
@@ -185,7 +197,7 @@ Recommended follow-up controls:
 
 1. Add `scan_max_instance_vcpu` or `scan_instance_sizes` so a customer can
    choose `4xlarge` and `8xlarge` while retaining family selection.
-2. Support a higher-weight preferred c8a NodePool plus a lower-weight,
+2. Support a higher-weight preferred m8a NodePool plus a lower-weight,
    generation-8 diversified Spot fallback. An exact-family-only Spot pool
    reduces capacity diversity.
 3. Keep Tika minimum and maximum customer-configurable and require the catalog
@@ -260,6 +272,37 @@ nine-minute post-change sample showed:
 
 The storage change materially reduced the I/O and WAL-write portion of the
 bottleneck. Relation-lock contention remains a separate query-level issue.
+
+## Post-experiment resource and instance recommendation
+
+A later live sample covered 120 small workers, 8 standard workers, 15 large
+workers, 32 Tika replicas, 20 Presidio replicas, and 7 Ollama replicas. The
+scan fleet averaged approximately 9-10% CPU and 16-17% memory, while several
+Spot nodes were scheduler-full because declared requests consumed 64-73% CPU
+and 86-99% memory.
+
+The calibrated scan-node requests decrease from 173 to 90 CPU cores and from
+406 to 371 GiB memory. This is a 48% CPU-request reduction and a 9%
+memory-request reduction. Large-worker memory remains 16 GiB because those
+pods were idle during the sample; reducing it requires an active large-object
+peak rather than an idle snapshot.
+
+The resulting aggregate request ratio is approximately 4.1 GiB per vCPU.
+`m8a.4xlarge` supplies 16 vCPU and 64 GiB, matching that ratio better than
+`c8a.4xlarge` (16 vCPU and 32 GiB) or `r8a.4xlarge` (16 vCPU and 128 GiB).
+The reviewed Terraform profile therefore uses:
+
+```hcl
+scan_instance_families       = ["m8a"]
+scan_min_instance_generation = 8
+scan_instance_vcpus          = [16]
+```
+
+The family and exact CPU constraints resolve to `m8a.4xlarge`. At the
+2026-07-30 price snapshot, `m8a.4xlarge` was USD 0.97376/hour on demand and
+USD 0.3715-0.7967/hour Spot across the three configured zones. Expected
+steady-state packing is approximately 7-9 nodes before topology, DaemonSet,
+and disruption headroom; use 8-10 as the operational planning range.
 
 ## Rollback
 

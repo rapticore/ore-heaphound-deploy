@@ -8,12 +8,15 @@
 extraction:
   autoscaling:
     minReplicas: 24
+  resources:
+    requests: { cpu: "500m", memory: "2Gi" }
+    limits: { cpu: "2", memory: "4Gi" }
 
 capacityAdvisor:
   stageMaxReplicas:
     tika: 32
   catalog:
-    version: builtin-conservative-v2-tika32
+    version: builtin-balanced-m8a-v3-tika32
     profiles:
       - id: small
         stage: scan
@@ -54,7 +57,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 80
+        max_replicas: 20
       - id: qwen
         stage: contextual
         capacity_class: gpu

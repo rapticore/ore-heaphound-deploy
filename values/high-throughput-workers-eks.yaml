@@ -1,4 +1,5 @@
-# Optional additive overlay for a bounded 143-pod scan-worker baseline.
+# Optional additive overlay for a bounded 143-pod scan-worker baseline with
+# requests calibrated from a live production utilization sample.
 #
 # Helm replaces lists, so this file intentionally contains the complete worker
 # pool list. Apply it after values/central-eks.yaml and before any
@@ -13,7 +14,7 @@ capacityAdvisor:
       concurrency: 4
       placements: []
       resources:
-        requests: { cpu: "500m", memory: "512Mi" }
+        requests: { cpu: "100m", memory: "256Mi" }
         limits: { cpu: "2", memory: "2Gi" }
     - name: standard
       capacityClass: standard
@@ -22,7 +23,7 @@ capacityAdvisor:
       concurrency: 4
       placements: []
       resources:
-        requests: { cpu: "2", memory: "4Gi" }
+        requests: { cpu: "1500m", memory: "1536Mi" }
         limits: { cpu: "4", memory: "8Gi" }
     - name: large
       capacityClass: large
@@ -31,10 +32,13 @@ capacityAdvisor:
       concurrency: 2
       placements: []
       resources:
-        requests: { cpu: "4", memory: "16Gi" }
+        # Large workers were idle during the sizing sample. Preserve the
+        # reviewed 16-GiB memory reservation until an active large-object peak
+        # proves a lower value is safe.
+        requests: { cpu: "2", memory: "16Gi" }
         limits: { cpu: "8", memory: "32Gi" }
   catalog:
-    version: builtin-conservative-v2-tika32
+    version: builtin-balanced-m8a-v3-tika32
     profiles:
       - id: small
         stage: scan
@@ -75,7 +79,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 80
+        max_replicas: 20
       - id: qwen
         stage: contextual
         capacity_class: gpu
@@ -84,3 +88,16 @@ capacityAdvisor:
         hourly_cost_microusd: 1100000
         min_replicas: 0
         max_replicas: 8
+
+# These services were using more than their previous requests. Raising the
+# requests makes packing truthful without changing limits or replica ceilings.
+presidio:
+  resources:
+    requests: { cpu: "1", memory: "1280Mi" }
+    limits: { cpu: "2", memory: "2Gi" }
+
+localModels:
+  ollama:
+    resources:
+      requests: { cpu: "2500m", memory: "11Gi" }
+      limits: { cpu: "4", memory: "12Gi" }

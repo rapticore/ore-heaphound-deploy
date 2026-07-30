@@ -380,7 +380,7 @@ run "high_throughput_scan_pool" {
     region                               = "us-west-2"
     anchor_bucket_name                   = "ore-heaphound-ci-anchor"
     cluster_endpoint_public_access_cidrs = ["192.0.2.10/32"]
-    scan_instance_families               = ["c8a"]
+    scan_instance_families               = ["m8a"]
     scan_min_instance_generation         = 8
     scan_min_instance_vcpu               = 16
     scan_instance_vcpus                  = [16]
@@ -398,14 +398,14 @@ run "high_throughput_scan_pool" {
       for name, manifest in kubectl_manifest.node_pool :
       !startswith(name, "scan_") || (
         strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-family") &&
-        strcontains(manifest.yaml_body, "c8a") &&
+        strcontains(manifest.yaml_body, "m8a") &&
         strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
         strcontains(manifest.yaml_body, "\"7\"") &&
         strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu") &&
         strcontains(manifest.yaml_body, "\"16\"")
       )
     ])
-    error_message = "The high-throughput scan profile must render c8a-only, generation-8+, exact 16-vCPU requirements for every scan NodePool."
+    error_message = "The high-throughput scan profile must render m8a-only, generation-8+, exact 16-vCPU requirements for every scan NodePool."
   }
 
   assert {
