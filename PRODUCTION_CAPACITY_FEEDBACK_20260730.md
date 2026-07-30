@@ -83,6 +83,17 @@ defaults and the high-throughput c8a profile.
 of the experiment: 24 minimum Tika replicas and a stage ceiling of 32. It is an
 optional additive overlay rather than a new global production default.
 
+`values/high-throughput-workers-eks.yaml` records the follow-up bounded worker
+experiment: 120 small, 8 standard, and 15 large minimum replicas, for 143
+worker pods and 542 worker processes.
+
+An attempted same-process-count rebalance to 96 small, 32 standard, and 15
+large was rejected by the signed v0.1.0-develop.22 chart's production
+validation. The chart permits at most eight Standard replicas until the
+scan-first claim path is re-qualified. The live configuration was immediately
+returned to 120 small, 8 standard, and 15 large; the repository does not weaken
+or bypass that release control.
+
 ## Production experiment
 
 The live NodePools were changed to the exact high-throughput requirements
