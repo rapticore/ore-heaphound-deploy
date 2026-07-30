@@ -107,7 +107,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "6f6cc23a80ca82ecd1a59d60bc4d791142f6a41c08f03bec3663387129067a57"
+          "sha256": "cc13716671ad763a9f0e90912123d36bb0bcfc6918512ec1132258320f66ee52"
         },
         {
           "path": "internal/scanner/handler.go",

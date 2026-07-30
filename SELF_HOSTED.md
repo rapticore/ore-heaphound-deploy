@@ -240,7 +240,8 @@ The stack creates:
 - one fixed EKS-managed on-demand GPU node for the always-ready local-model
   replica;
 - Karpenter CPU and GPU Spot pools plus an optional on-demand scan fallback;
-- encrypted Multi-AZ PostgreSQL with 35-day PITR and deletion protection;
+- encrypted Single-AZ PostgreSQL with 35-day PITR, encrypted daily backups,
+  and deletion protection;
 - a KMS-encrypted S3 Object Lock bucket;
 - encrypted EFS model storage; and
 - separate IRSA roles for inventory/anchor writes and source-object reads; and

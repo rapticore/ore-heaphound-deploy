@@ -883,18 +883,21 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 resource "aws_db_instance" "postgres" {
   identifier = var.name
 
-  engine                                = "postgres"
-  engine_version                        = "16.13"
-  instance_class                        = var.database_instance_class
-  allocated_storage                     = 100
-  max_allocated_storage                 = 2000
-  storage_type                          = "gp3"
-  storage_encrypted                     = true
-  kms_key_id                            = aws_kms_key.data.arn
-  db_name                               = var.database_name
-  username                              = var.database_username
-  manage_master_user_password           = true
-  multi_az                              = true
+  engine                      = "postgres"
+  engine_version              = "16.13"
+  instance_class              = var.database_instance_class
+  allocated_storage           = 100
+  max_allocated_storage       = 2000
+  storage_type                = "gp3"
+  storage_encrypted           = true
+  kms_key_id                  = aws_kms_key.data.arn
+  db_name                     = var.database_name
+  username                    = var.database_username
+  manage_master_user_password = true
+  # The approved production cost baseline is Single-AZ. Availability is
+  # recovered through PITR and the encrypted daily backup plan rather than a
+  # continuously running RDS standby.
+  multi_az                              = false
   publicly_accessible                   = false
   db_subnet_group_name                  = module.vpc.database_subnet_group_name
   vpc_security_group_ids                = [aws_security_group.database.id]

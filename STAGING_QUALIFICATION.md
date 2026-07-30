@@ -1639,7 +1639,7 @@ removed installation.
 The minimum representative topology is:
 
 - a dedicated customer-owned AWS staging account;
-- EKS, Multi-AZ RDS PostgreSQL, EFS, and an S3 Object Lock anchor bucket in one
+- EKS, Single-AZ RDS PostgreSQL, EFS, and an S3 Object Lock anchor bucket in one
   approved AWS region;
 - a versioned, KMS-encrypted synthetic S3 source bucket;
 - a customer-owned GCP project with a synthetic GCS bucket and keyless
@@ -1953,7 +1953,8 @@ Have a second person review the plan. Confirm:
 - three-AZ private networking and restricted EKS API CIDRs;
 - separate control-plane and scan-worker roles;
 - no source write/delete permission on those roles;
-- Multi-AZ RDS, encryption, PITR, and deletion protection;
+- Single-AZ RDS, encryption, PITR, encrypted daily backups, and deletion
+  protection;
 - S3 versioning, Object Lock, KMS, and at least 365-day retention;
 - EFS encryption;
 - exact pinned prerequisite chart versions and package hashes;

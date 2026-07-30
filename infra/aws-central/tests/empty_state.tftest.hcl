@@ -118,6 +118,11 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition     = aws_db_instance.postgres.multi_az == false
+    error_message = "The approved production cost baseline is Single-AZ RDS."
+  }
+
+  assert {
     condition     = var.karpenter_ami_alias == "al2023@v20260724"
     error_message = "Karpenter must use the evaluated immutable AL2023 AMI release."
   }

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "releases": [
+    {
+      "tag": "v0.1.0-develop.20",
+      "tag_object": "642739004e2d39d1cdd56c2ea3ac154913030f5c",
+      "source_commit": "ee2bd6a49a6fbaa1cd1e844d37fc50cee2e25154",
+      "status": "withdrawn",
+      "reason_code": "migration_runner_transaction_incompatible",
+      "reason": "Migration 0067 contains CREATE INDEX CONCURRENTLY but the signed runner executes it inside a transaction, causing SQLSTATE 25001 before any v20 migration commits.",
+      "replacement": "v0.1.0-develop.21"
+    }
+  ]
+}
