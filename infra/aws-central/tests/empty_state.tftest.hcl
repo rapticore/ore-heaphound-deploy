@@ -132,10 +132,22 @@ run "empty_state_plan" {
       for name, manifest in kubectl_manifest.node_pool :
       manifest.yaml_body != null && (
         !startswith(name, "scan_") ||
-        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation")
+        (
+          strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
+          strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu")
+        )
       )
     ])
-    error_message = "Every scan NodePool must reject instance generations older than generation 5."
+    error_message = "Every scan NodePool must enforce the configured minimum instance generation and vCPU count."
+  }
+
+  assert {
+    condition = (
+      var.scan_min_instance_generation == 5 &&
+      var.scan_min_instance_vcpu == 2 &&
+      length(var.scan_instance_families) == 0
+    )
+    error_message = "Default scan capacity must preserve generation-5+, category-diversified behavior without excluding standard 2-vCPU family members."
   }
 
   assert {
@@ -357,6 +369,35 @@ run "remediation_enabled_plan" {
       ])
     )
     error_message = "Both remediation buckets must deny insecure transport and any explicit KMS downgrade or wrong-key write."
+  }
+}
+
+run "high_throughput_scan_pool" {
+  command = plan
+
+  variables {
+    name                                 = "ore-heaphound-ci"
+    region                               = "us-west-2"
+    anchor_bucket_name                   = "ore-heaphound-ci-anchor"
+    cluster_endpoint_public_access_cidrs = ["192.0.2.10/32"]
+    scan_instance_families               = ["c8a"]
+    scan_min_instance_generation         = 8
+    scan_min_instance_vcpu               = 16
+  }
+
+  assert {
+    condition = alltrue([
+      for name, manifest in kubectl_manifest.node_pool :
+      !startswith(name, "scan_") || (
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-family") &&
+        strcontains(manifest.yaml_body, "c8a") &&
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
+        strcontains(manifest.yaml_body, "\"7\"") &&
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu") &&
+        strcontains(manifest.yaml_body, "\"15\"")
+      )
+    ])
+    error_message = "The high-throughput scan profile must render c8a-only, generation-8+, 16-vCPU+ requirements for every scan NodePool."
   }
 }
 

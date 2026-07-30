@@ -26,6 +26,18 @@ system_node_min_size     = 3
 system_node_desired_size = 3
 system_node_max_size     = 6
 
+# Scan nodes remain diversified by default. A reviewed high-throughput
+# production overlay can prefer a current compute family and reject small
+# nodes without patching the live Karpenter NodePool:
+#
+# scan_instance_families       = ["c8a"]
+# scan_min_instance_generation = 8
+# scan_min_instance_vcpu       = 16
+#
+# Keep Spot as the primary capacity type. Exact-family constraints reduce the
+# available Spot capacity pool, so validate the selected family in every
+# configured availability zone before applying.
+
 # Infrastructure tags are identity, not mutable software-version metadata.
 # During reconciliation copy the exact existing tag map from the approved
 # state/configuration. Do not replace an existing ReleaseTag with the new tag.

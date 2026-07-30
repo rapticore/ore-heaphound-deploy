@@ -1,0 +1,65 @@
+# Optional additive overlay for a production installation where extraction
+# throughput is more valuable than idle-cost minimization. Apply this after
+# values/central-eks.yaml and before the customer-private overlay.
+#
+# If the customer-private overlay replaces capacityAdvisor.catalog.profiles,
+# preserve the complete profile list and set the Tika profile's max_replicas
+# to the same ceiling. Helm replaces lists rather than merging profile entries.
+extraction:
+  autoscaling:
+    minReplicas: 24
+
+capacityAdvisor:
+  stageMaxReplicas:
+    tika: 32
+  catalog:
+    version: builtin-conservative-v2-tika32
+    profiles:
+      - id: small
+        stage: scan
+        capacity_class: small
+        throughput_bytes_per_hour: 1073741824
+        throughput_objects_per_hour: 20000
+        hourly_cost_microusd: 120000
+        min_replicas: 0
+        max_replicas: 120
+      - id: standard
+        stage: scan
+        capacity_class: standard
+        throughput_bytes_per_hour: 2147483648
+        throughput_objects_per_hour: 5000
+        hourly_cost_microusd: 280000
+        min_replicas: 1
+        max_replicas: 8
+      - id: large
+        stage: scan
+        capacity_class: large
+        throughput_bytes_per_hour: 3221225472
+        throughput_objects_per_hour: 500
+        hourly_cost_microusd: 750000
+        min_replicas: 0
+        max_replicas: 20
+      - id: tika
+        stage: extraction
+        capacity_class: standard
+        throughput_bytes_per_hour: 8589934592
+        throughput_objects_per_hour: 2000
+        hourly_cost_microusd: 220000
+        min_replicas: 1
+        max_replicas: 32
+      - id: presidio
+        stage: entity_recognition
+        capacity_class: standard
+        throughput_bytes_per_hour: 8589934592
+        throughput_objects_per_hour: 5000
+        hourly_cost_microusd: 240000
+        min_replicas: 0
+        max_replicas: 80
+      - id: qwen
+        stage: contextual
+        capacity_class: gpu
+        throughput_bytes_per_hour: 6442450944
+        throughput_objects_per_hour: 1000
+        hourly_cost_microusd: 1100000
+        min_replicas: 0
+        max_replicas: 8

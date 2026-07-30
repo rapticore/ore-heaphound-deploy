@@ -614,7 +614,7 @@ locals {
       workload   = "scan"
       capacity   = "spot"
       weight     = 100
-      families   = []
+      families   = var.scan_instance_families
       categories = var.scan_instance_categories
       cpu        = "1000"
       memory     = "4000Gi"
@@ -633,7 +633,7 @@ locals {
       workload   = "scan"
       capacity   = "on-demand"
       weight     = 10
-      families   = []
+      families   = var.scan_instance_families
       categories = var.scan_instance_categories
       cpu        = "500"
       memory     = "2000Gi"
@@ -673,7 +673,16 @@ resource "kubectl_manifest" "node_pool" {
             { key = "kubernetes.io/arch", operator = "In", values = ["amd64"] },
             { key = "kubernetes.io/os", operator = "In", values = ["linux"] },
             ], each.value.workload == "scan" ? [
-            { key = "karpenter.k8s.aws/instance-generation", operator = "Gt", values = ["4"] }
+            {
+              key      = "karpenter.k8s.aws/instance-generation"
+              operator = "Gt"
+              values   = [tostring(var.scan_min_instance_generation - 1)]
+            },
+            {
+              key      = "karpenter.k8s.aws/instance-cpu"
+              operator = "Gt"
+              values   = [tostring(var.scan_min_instance_vcpu - 1)]
+            }
             ] : [], length(each.value.families) > 0 ? [
             { key = "karpenter.k8s.aws/instance-family", operator = "In", values = each.value.families }
             ] : [
