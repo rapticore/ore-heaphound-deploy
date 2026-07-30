@@ -11,6 +11,10 @@ use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,
 DNS/ACM, and one-approval agent workflow, use
 [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+After the installation agent has established a healthy production release, use
+[AUTOMATIC_RELEASES.md](AUTOMATIC_RELEASES.md) to let a customer-owned scheduled
+runner reconcile conservative, fully signed application updates without
+advancing individual containers or watching mutable tags.
 For a design-partner engagement on the partner's own data with governed
 remediation enabled, use [DESIGN_PARTNER.md](DESIGN_PARTNER.md); it layers the
 remediation infrastructure, values, walkthrough, and scope statement on top of

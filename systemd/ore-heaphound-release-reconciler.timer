@@ -1,0 +1,12 @@
+[Unit]
+Description=Check for a verified Ore HeapHound release every 15 minutes
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=15m
+RandomizedDelaySec=2m
+Persistent=true
+Unit=ore-heaphound-release-reconciler.service
+
+[Install]
+WantedBy=timers.target

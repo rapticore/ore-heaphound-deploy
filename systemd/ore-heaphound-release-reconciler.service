@@ -1,0 +1,21 @@
+[Unit]
+Description=Reconcile the next verified Ore HeapHound release
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ore-heaphound-reconciler
+Group=ore-heaphound-reconciler
+UMask=0077
+EnvironmentFile=/etc/ore-heaphound/release-reconciler.env
+ExecStart=/opt/ore-heaphound-release/reconcile-signed-release.sh apply /etc/ore-heaphound/release-reconciler.env
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ore-heaphound-release
+
+# The installation agent supplies short-lived customer credentials through an
+# instance role or customer CI/OIDC runner. Do not put cloud, Kubernetes, or
+# database secrets in this unit or its EnvironmentFile.

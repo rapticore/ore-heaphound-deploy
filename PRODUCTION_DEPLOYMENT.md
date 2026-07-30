@@ -139,6 +139,23 @@ Kubernetes then refreshes each Deployment automatically because the verified
 digest changes its pod template. Release availability alone must never mutate a
 running production workload.
 
+The released implementation is
+`scripts/reconcile-signed-release.sh`; its standing policy, required
+customer-owned configuration, snapshot behavior, bounded two-tag admission
+overlap, and scheduler setup are documented in
+`AUTOMATIC_RELEASES.md`. Bootstrap it only after `.21` is healthy and the
+rollback worker hold has been cleared. Its unattended lane requires a
+zero-change Terraform plan and unchanged detector, model, capability,
+prerequisite, third-party image, database migration inventory, and normalized
+control-plane posture. Every wider change stops for the installation agent
+instead of partially refreshing API, web, or workers.
+
+The `.21` to `.22` bootstrap is deliberately agent-managed and documented
+there: zero-change Terraform plan, pre-upgrade snapshot, dual `.21`/`.22`
+admission identities, atomic `.22` control rollout, then installation of the
+customer-owned scheduler. Later compatible application-only releases can use
+the unattended lane.
+
 ## Live verification on a release upgrade
 
 Production verification uses its own two-replica source-reading Deployment,
