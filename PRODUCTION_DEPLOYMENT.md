@@ -139,6 +139,114 @@ Kubernetes then refreshes each Deployment automatically because the verified
 digest changes its pod template. Release availability alone must never mutate a
 running production workload.
 
+## Live verification on a release upgrade
+
+Production verification uses its own two-replica source-reading Deployment,
+database role, and IRSA role. The API only issues a 60-second single-use grant;
+it does not receive the evidence key or source-read authority. Populate
+`REPLACE_VERIFICATION_PREVIEW_ROLE_ARN` from Terraform output
+`verification_preview_role_arn`.
+
+A fresh operator secret populated by this release already contains
+`SDDP_VERIFICATION_DATABASE_URL` and
+`SDDP_VERIFICATION_ROLE_PASSWORD`. When upgrading an existing installation,
+run the released add-only helper before Helm:
+
+```sh
+scripts/upgrade-operator-secret-for-verification.sh \
+  "$(terraform -chdir=infra/aws-central output -raw region)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_endpoint)" \
+  "$(terraform -chdir=infra/aws-central output -raw database_name)" \
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_arn)" \
+  "$(terraform -chdir=infra/aws-central output -raw operator_secret_kms_key_arn)"
+kubectl -n sddp annotate externalsecret ore-heaphound-operator \
+  force-sync="$(date +%s)" --overwrite
+kubectl -n sddp wait \
+  --for=jsonpath='{.data.SDDP_VERIFICATION_DATABASE_URL}' \
+  secret/sddp-production-operator-secrets --timeout=5m
+kubectl -n sddp wait \
+  --for=jsonpath='{.data.SDDP_VERIFICATION_ROLE_PASSWORD}' \
+  secret/sddp-production-operator-secrets --timeout=5m
+```
+
+The helper preserves every existing field, promotes only if the secret version
+it read is still current, and leaves the former value as `AWSPREVIOUS`.
+Installation must stop if either exact key, the dedicated IRSA output, the
+private Service, or both ready preview replicas are absent. Do not enable the
+legacy API-owned sampling path to work around a failed preview rollout.
+
+## Upgrade develop.19 to develop.20
+
+Use this sequence only after `v0.1.0-develop.20` has a successful release
+workflow and the complete signed deployment kit is available. Do not deploy a
+branch image or advance one container independently.
+
+1. Preserve the current private values overlay and record the exact running
+   chart/image/detector coordinates. If RDS was resized through AWS before this
+   release, record the exact resulting `db.m8g.<size>` class and set
+   `database_instance_class` to that exact value in the persistent private
+   Terraform variables overlay before planning. Do not rely on the module's
+   bootstrap default. Keep the temporary production standard worker ceiling at
+   8 while the upgrade is evaluated.
+2. Verify the `.20` release manifest, archive, images, charts, detector
+   manifest, provenance, and SBOMs as described above. Confirm that the
+   contextual detector identity is unchanged and Presidio is enabled with its
+   pinned image/NLP identity and signed `not_qualified` quality status.
+3. Use Terraform `1.15.8` to create a new full saved plan. The existing
+   `aws_vpc_endpoint.s3` gateway endpoint must remain at the same state address;
+   stop if the plan deletes or replaces it. Stop if the plan changes the
+   approved post-resize RDS class away from the exact pinned `db.m8g.<size>`
+   value, replaces the database, reduces backup/monitoring settings, or reports
+   an unexpected pending modification. The plan may add the dedicated
+   `verification_preview` source-read role. It must retain one fixed on-demand
+   GPU baseline node; elastic GPU replicas 2 through 8 use Spot capacity with
+   the released fallback policy.
+4. Put `verification_preview_role_arn` into the persistent private values
+   overlay, then run
+   `upgrade-operator-secret-for-verification.sh` and force the ExternalSecret
+   synchronization using the value-free commands in the preceding section.
+   Prove both verification database keys are present before Helm.
+5. Apply the exact saved Terraform plan, upgrade the signed admission chart
+   first, and then run the control-chart upgrade with `--atomic`. The released
+   migrations `0067` through `0070` are required; never skip or edit them.
+6. Wait for three API replicas, three web replicas, two verification-preview
+   replicas, extraction, Presidio, scan-worker pools, and Ollama to be ready.
+   Production must retain Ollama `minReplicaCount: 1`, allow at most 8 Qwen
+   replicas, and cap the standard scan-worker pool at 8. The scan-worker and
+   verification database pools must each have at most two connections per pod.
+7. Verify an admin and an analyst can each use the Triage **Verify** action.
+   The browser must call the private BFF route, the grant must expire after 60
+   seconds and fail on replay, responses must be `no-store`, and the ordinary
+   control-plane API must not return source values.
+8. Start concurrent scans only on different registered sources. Attempting a
+   second active scan on the same source must return a conflict. Cancel a test
+   scan and wait through `cancelling` to `cancelled`; confirm leases stop
+   renewing, no second worker continues that source, and the bounded reconciler
+   leaves no pending or leased work for the scan.
+9. Confirm the Dashboard distinguishes current-estate posture from lifetime
+   classified work, labels historical backfill as incomplete until finished,
+   records immutable prospective predictions and cost observations, and shows
+   egress as `not_attested` unless a future signed manifest actually attests it.
+   Full, Partial, and Not analyzed must sum to Discovered; Finding-bearing is a
+   deliberately overlapping physical-object footprint and may exceed Full
+   while partially analyzed objects contain findings. Stop if either posture or
+   value snapshot is marked stale after the first successful refresh.
+10. Compare claim SQL AAS, RDS CPU, connections, no-work claims, and completed
+    units per minute with the `.19` diagnostic. Do not raise the standard
+    worker ceiling above 8 until the scan-first batch claim path has shown
+    stable database headroom under concurrent-source load.
+
+For an unresponsive pre-upgrade scan, do not delete queue rows or launch a
+second scan against the source. Complete the `.20` upgrade, request
+cancellation once, and let the restart-safe reconciler revoke leases and
+finish coverage accounting. Escalate only if it does not reach `cancelled`;
+retain its scan ID, worker heartbeats, pending/leased counts, and API logs.
+
+Do not install an in-container release watcher. The external installation
+agent may detect a newer signed release and prepare a plan, but it may reconcile
+only the entire verified release unit through the approval boundary described
+under **Automatic release reconciliation**.
+
 ## Governed remediation
 
 Remediation is off unless it is explicitly requested. When it is in scope, the

@@ -10,7 +10,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:41b3bb64c69d76468de3b1bcfb7837676c292969849a8de9c2c77cd7dc4e47f2
+  digest: sha256:c4a42f3a6b5cc956e4aa43ca6dcb97178a4c3072ab5548e60b97c2b3a7272a5e
 
 extraction:
   enabled: true
@@ -26,7 +26,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:b2bf4007fee311641c33ecf579ae86df4c3b958b190ccea56c41752e48bbc381
+    digest: sha256:1c12bebcad9a0c88d302aa451d6be51bb9ae22658358631765c566d8cd00ea12
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -34,6 +34,7 @@ generatedSecret: sddp-production-generated
 database:
   runtimeRole: sddp_runtime
   webRole: sddp_web
+  verificationRole: sddp_verification_preview
 
 security:
   allowGlobalResourceAccess: true
@@ -47,6 +48,13 @@ controlPlane:
   replicas: 3
   staticAuth:
     enabled: true
+
+verificationPreview:
+  enabled: true
+  replicas: 2
+  grantTTL: 60s
+  maxSamples: 3
+  hardMaxSamples: 10
 
 web:
   enabled: true
@@ -68,7 +76,7 @@ scanWorkers:
   sharding:
     enabled: true
   rulesetVersion: native:builtin-v6|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:7fc385b1226e071d5fc937aa7e6dc482c0b57f431970361e6e267b4097bf12e7
+  detectorManifestDigest: sha256:ac115d3806b5adc9aff9a41a507d3f1b74bec81c14fc671885c900ccab8ed37f
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct
@@ -132,7 +140,7 @@ localModels:
     autoscaling:
       enabled: true
       minReplicas: 1
-      maxReplicas: 24
+      maxReplicas: 8
     persistence:
       enabled: true
       existingClaim: sddp-models-rox
@@ -164,6 +172,7 @@ resilience:
     apiMinAvailable: 2
     webMinAvailable: 2
     extractionMinAvailable: 1
+    verificationMinAvailable: 1
   topologySpread:
     enabled: true
     whenUnsatisfiable: DoNotSchedule
@@ -181,3 +190,7 @@ serviceAccount:
     name: sddp-scan-worker
     annotations:
       eks.amazonaws.com/role-arn: REPLACE_SCAN_WORKER_ROLE_ARN
+  verificationPreview:
+    name: sddp-verification-preview
+    annotations:
+      eks.amazonaws.com/role-arn: REPLACE_VERIFICATION_PREVIEW_ROLE_ARN

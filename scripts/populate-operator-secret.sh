@@ -75,6 +75,7 @@ readonly MASTER_FILE="${WORK_DIR}/master.json"
 readonly RUNTIME_PASSWORD_FILE="${WORK_DIR}/runtime-password"
 readonly WEB_PASSWORD_FILE="${WORK_DIR}/web-password"
 readonly EXECUTOR_PASSWORD_FILE="${WORK_DIR}/executor-password"
+readonly VERIFICATION_PASSWORD_FILE="${WORK_DIR}/verification-password"
 readonly OPERATOR_FILE="${WORK_DIR}/operator.json"
 
 aws secretsmanager get-secret-value \
@@ -96,18 +97,23 @@ openssl rand -base64 48 >"$WEB_PASSWORD_FILE"
 # shape stable whether or not remediation is enabled at install time; the key is
 # simply unused when remediation.databaseRole is empty.
 openssl rand -base64 48 >"$EXECUTOR_PASSWORD_FILE"
+# Live verification is source-read only but sees transient raw values. Keep its
+# database login separate from both the control plane and scan workers.
+openssl rand -base64 48 >"$VERIFICATION_PASSWORD_FILE"
 
 jq -n \
   --slurpfile master "$MASTER_FILE" \
   --rawfile runtime_password "$RUNTIME_PASSWORD_FILE" \
   --rawfile web_password "$WEB_PASSWORD_FILE" \
   --rawfile executor_password "$EXECUTOR_PASSWORD_FILE" \
+  --rawfile verification_password "$VERIFICATION_PASSWORD_FILE" \
   --arg host "$DATABASE_ENDPOINT" \
   --arg database "$DATABASE_NAME" '
     ($master[0]) as $admin |
     ($runtime_password | rtrimstr("\n")) as $runtime |
     ($web_password | rtrimstr("\n")) as $web |
     ($executor_password | rtrimstr("\n")) as $executor |
+    ($verification_password | rtrimstr("\n")) as $verification |
     {
       SDDP_MIGRATION_DATABASE_URL:
         ("postgresql://" + ($admin.username | @uri) + ":" +
@@ -127,7 +133,12 @@ jq -n \
         ("postgresql://sddp_executor:" + ($executor | @uri) + "@" +
          $host + ":5432/" + ($database | @uri) +
          "?sslmode=verify-full"),
-      SDDP_EXECUTOR_ROLE_PASSWORD: $executor
+      SDDP_EXECUTOR_ROLE_PASSWORD: $executor,
+      SDDP_VERIFICATION_DATABASE_URL:
+        ("postgresql://sddp_verification_preview:" + ($verification | @uri) + "@" +
+         $host + ":5432/" + ($database | @uri) +
+         "?sslmode=verify-full"),
+      SDDP_VERIFICATION_ROLE_PASSWORD: $verification
     }
   ' >"$OPERATOR_FILE"
 

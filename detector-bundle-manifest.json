@@ -63,7 +63,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "a7c741851db3a61d5e58cc9fed2d887055d35045ce5f89b7f28c26b4d41d94c6"
+          "sha256": "685fc75a24f1b26e742bcf6ad9509322073b4ae7fe0b918cabeee7f32831e57a"
         },
         {
           "path": "internal/avrosafe/decoder.go",
@@ -107,7 +107,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "4e2dcbfcfda60e37cf80ff10169da255a9e66b45724e62c363d1635b36395e98"
+          "sha256": "6f6cc23a80ca82ecd1a59d60bc4d791142f6a41c08f03bec3663387129067a57"
         },
         {
           "path": "internal/scanner/handler.go",
@@ -119,7 +119,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "4888e7459d474881e167026bc0afb8dae82f16e94badb7afbd7e3c520a657ded"
+          "sha256": "6d7b3ce13dc135f1bb57d2405aae7209dd1bc8cb95643f1b4691eab1a5f62452"
         }
       ]
     },
@@ -150,7 +150,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "a7c741851db3a61d5e58cc9fed2d887055d35045ce5f89b7f28c26b4d41d94c6"
+          "sha256": "685fc75a24f1b26e742bcf6ad9509322073b4ae7fe0b918cabeee7f32831e57a"
         },
         {
           "path": "internal/secrets/kingfisher.go",

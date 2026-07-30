@@ -42,11 +42,12 @@ the repository, and getting it wrong is worse than under-promising.
   de-identification.
 - **medical-imaging capable.** No DICOM de-identification. Do not route DICOM
   through OCR and describe the result as de-identified.
-- **live-value verifiable in-product.** The production profile refuses the
-  API-owned verification-sampling path (`validation.yaml:240`), so an analyst
-  confirms a true positive by opening the object in their own bucket, using the
-  column/row or offset the finding reports. Expect this friction and budget for
-  it in the evaluation.
+- **an unrestricted source-value browser.** Production verification is a
+  dedicated source-read workload, not the ordinary control-plane API. An
+  authorized admin or analyst receives a 60-second, single-use, actor-and-group
+  bound grant for at most three values by default (hard ceiling ten). Responses
+  are audited and `no-store`; values still exist transiently in the authorized
+  browser and must be handled accordingly.
 
 Coverage is always explicit: an asset that could not be parsed is reported as
 `unsupported` or `partial`, never as clean.

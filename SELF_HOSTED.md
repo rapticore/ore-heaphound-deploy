@@ -329,6 +329,9 @@ The synchronized `sddp-production-operator-secrets` contains at least:
 
 - `SDDP_MIGRATION_DATABASE_URL`, `SDDP_DATABASE_URL`, and
   `SDDP_WEB_DATABASE_URL`, using TLS verification;
+- `SDDP_VERIFICATION_DATABASE_URL` and
+  `SDDP_VERIFICATION_ROLE_PASSWORD` for the dedicated source-read preview
+  workload;
 - `SDDP_EXECUTOR_DATABASE_URL` and `SDDP_EXECUTOR_ROLE_PASSWORD` when governed
   remediation is enabled;
 - any cloud/source credentials that cannot use workload identity; and

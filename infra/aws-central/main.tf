@@ -238,8 +238,9 @@ check "system_node_scaling" {
 
 data "aws_iam_policy_document" "workload_assume" {
   for_each = {
-    control_plane = var.control_plane_service_account_name
-    scan_worker   = var.scan_worker_service_account_name
+    control_plane        = var.control_plane_service_account_name
+    scan_worker          = var.scan_worker_service_account_name
+    verification_preview = var.verification_preview_service_account_name
   }
 
   statement {
@@ -350,6 +351,14 @@ resource "aws_iam_role_policy" "scan_worker" {
 
   name   = "least-privilege-source-reader"
   role   = aws_iam_role.workload["scan_worker"].id
+  policy = data.aws_iam_policy_document.scan_worker.json
+}
+
+resource "aws_iam_role_policy" "verification_preview" {
+  count = length(var.source_bucket_arns) > 0 ? 1 : 0
+
+  name   = "least-privilege-verification-source-reader"
+  role   = aws_iam_role.workload["verification_preview"].id
   policy = data.aws_iam_policy_document.scan_worker.json
 }
 

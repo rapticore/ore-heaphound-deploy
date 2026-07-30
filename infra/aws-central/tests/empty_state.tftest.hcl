@@ -113,6 +113,11 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition     = aws_db_instance.postgres.instance_class == "db.m8g.2xlarge"
+    error_message = "New production installations must use the m8g database baseline unless an exact customer-approved class is pinned in private tfvars."
+  }
+
+  assert {
     condition     = var.karpenter_ami_alias == "al2023@v20260724"
     error_message = "Karpenter must use the evaluated immutable AL2023 AMI release."
   }
@@ -161,6 +166,15 @@ run "empty_state_plan" {
   assert {
     condition     = data.aws_secretsmanager_secret.operator.name == "/ore-heaphound-ci/operator"
     error_message = "The central plan must reference the exact bootstrap-owned operator secret."
+  }
+
+  assert {
+    condition = toset(keys(aws_iam_role.workload)) == toset([
+      "control_plane",
+      "scan_worker",
+      "verification_preview",
+    ])
+    error_message = "Verification preview must have a distinct workload identity rather than reusing the API or scan-worker role."
   }
 
   assert {
@@ -277,6 +291,16 @@ run "remediation_enabled_plan" {
       aws_s3_bucket_public_access_block.redacted[0].restrict_public_buckets
     )
     error_message = "Remediation-enabled plans must create the isolated executor and private destination buckets."
+  }
+
+  assert {
+    condition = (
+      length(aws_iam_role_policy.scan_worker) == 1 &&
+      length(aws_iam_role_policy.verification_preview) == 1 &&
+      aws_iam_role_policy.scan_worker[0].name == "least-privilege-source-reader" &&
+      aws_iam_role_policy.verification_preview[0].name == "least-privilege-verification-source-reader"
+    )
+    error_message = "Source-read authority must be attached independently to scan-worker and verification-preview identities."
   }
 
   assert {

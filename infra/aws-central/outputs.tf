@@ -56,6 +56,11 @@ output "scan_worker_role_arn" {
   value = aws_iam_role.workload["scan_worker"].arn
 }
 
+output "verification_preview_role_arn" {
+  description = "Dedicated source-read identity for short-lived no-store finding verification."
+  value       = aws_iam_role.workload["verification_preview"].arn
+}
+
 output "operator_secret_arn" {
   description = "Bootstrap-owned encrypted operator secret referenced by AWS central. Neither its metadata nor value is owned by this state."
   value       = data.aws_secretsmanager_secret.operator.arn

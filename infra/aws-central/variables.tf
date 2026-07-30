@@ -104,6 +104,11 @@ variable "scan_worker_service_account_name" {
   default = "sddp-scan-worker"
 }
 
+variable "verification_preview_service_account_name" {
+  type    = string
+  default = "sddp-verification-preview"
+}
+
 variable "source_bucket_arns" {
   description = "Exact S3 source bucket ARNs. The API may list them; scan workers may read versioned objects but cannot write or delete."
   type        = list(string)
@@ -132,8 +137,9 @@ variable "database_username" {
 }
 
 variable "database_instance_class" {
-  type    = string
-  default = "db.r7g.large"
+  description = "Exact RDS class. New deployments use the m8g production baseline; upgrades must pin the currently approved class in the private tfvars overlay and never rely on the default after an out-of-band AWS resize."
+  type        = string
+  default     = "db.m8g.2xlarge"
 }
 
 variable "anchor_bucket_name" {
