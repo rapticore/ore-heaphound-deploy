@@ -26,6 +26,35 @@ system_node_min_size     = 3
 system_node_desired_size = 3
 system_node_max_size     = 6
 
+# Scan nodes remain diversified by default. A reviewed high-throughput
+# production overlay can prefer a current general-purpose family and reject small
+# nodes without patching the live Karpenter NodePool:
+#
+# scan_instance_families       = ["m8a"]
+# scan_min_instance_generation = 8
+# scan_min_instance_vcpu       = 16
+# scan_instance_vcpus          = [16]
+# Together, the exact family and vCPU values resolve to m8a.4xlarge.
+#
+# Keep Spot as the primary capacity type. Exact-family constraints reduce the
+# available Spot capacity pool, so validate the selected family in every
+# configured availability zone before applying.
+
+# Optional lower-priority on-demand GPU fallback for a bounded Ollama burst:
+#
+# enable_llm_on_demand_burst    = true
+# llm_on_demand_burst_gpu_limit = 3
+# enable_spot_to_spot_consolidation = true
+#
+# RDS gp3 performance profile used by a high-throughput production site.
+# PostgreSQL requires at least 400 GiB before custom gp3 IOPS/throughput can
+# be provisioned. Allocated storage cannot later be reduced.
+#
+# database_allocated_storage      = 400
+# database_max_allocated_storage  = 2000
+# database_iops                   = 12000
+# database_storage_throughput     = 500
+
 # Infrastructure tags are identity, not mutable software-version metadata.
 # During reconciliation copy the exact existing tag map from the approved
 # state/configuration. Do not replace an existing ReleaseTag with the new tag.

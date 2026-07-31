@@ -142,6 +142,30 @@ variable "database_instance_class" {
   default     = "db.m8g.2xlarge"
 }
 
+variable "database_allocated_storage" {
+  description = "RDS gp3 allocated storage in GiB."
+  type        = number
+  default     = 100
+}
+
+variable "database_max_allocated_storage" {
+  description = "RDS gp3 autoscaling maximum in GiB."
+  type        = number
+  default     = 2000
+}
+
+variable "database_iops" {
+  description = "RDS gp3 provisioned IOPS."
+  type        = number
+  default     = 3000
+}
+
+variable "database_storage_throughput" {
+  description = "RDS gp3 provisioned throughput in MiB/s."
+  type        = number
+  default     = 125
+}
+
 variable "anchor_bucket_name" {
   description = "Globally unique S3 bucket used for signed evidence anchors."
   type        = string
@@ -219,13 +243,105 @@ variable "system_node_max_size" {
 }
 
 variable "scan_instance_categories" {
-  type    = list(string)
-  default = ["c", "m", "r"]
+  description = "EC2 instance categories allowed for scan NodePools when scan_instance_families is empty."
+  type        = list(string)
+  default     = ["c", "m", "r"]
+}
+
+variable "scan_instance_families" {
+  description = "Optional exact EC2 instance families for scan NodePools. Non-empty values take precedence over scan_instance_categories."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = (
+      length(var.scan_instance_families) <= 16 &&
+      alltrue([
+        for family in var.scan_instance_families :
+        can(regex("^[a-z][a-z0-9-]*$", family))
+      ])
+    )
+    error_message = "scan_instance_families must contain at most 16 valid EC2 instance-family names."
+  }
+}
+
+variable "scan_min_instance_generation" {
+  description = "Minimum EC2 generation allowed for scan NodePools."
+  type        = number
+  default     = 5
+
+  validation {
+    condition = (
+      var.scan_min_instance_generation >= 1 &&
+      var.scan_min_instance_generation <= 99 &&
+      floor(var.scan_min_instance_generation) == var.scan_min_instance_generation
+    )
+    error_message = "scan_min_instance_generation must be a whole number between 1 and 99."
+  }
+}
+
+variable "scan_min_instance_vcpu" {
+  description = "Minimum vCPU count allowed for each scan NodePool instance."
+  type        = number
+  default     = 2
+
+  validation {
+    condition = (
+      var.scan_min_instance_vcpu >= 2 &&
+      var.scan_min_instance_vcpu <= 192 &&
+      floor(var.scan_min_instance_vcpu) == var.scan_min_instance_vcpu
+    )
+    error_message = "scan_min_instance_vcpu must be a whole number between 2 and 192."
+  }
+}
+
+variable "scan_instance_vcpus" {
+  description = "Optional exact vCPU counts for scan NodePools. Non-empty values replace scan_min_instance_vcpu."
+  type        = list(number)
+  default     = []
+
+  validation {
+    condition = (
+      length(var.scan_instance_vcpus) <= 16 &&
+      alltrue([
+        for vcpu in var.scan_instance_vcpus :
+        vcpu >= 2 && vcpu <= 192 && floor(vcpu) == vcpu
+      ])
+    )
+    error_message = "scan_instance_vcpus must contain at most 16 whole vCPU counts between 2 and 192."
+  }
 }
 
 variable "gpu_instance_families" {
   type    = list(string)
   default = ["g5", "g6"]
+}
+
+variable "enable_llm_on_demand_burst" {
+  description = "Create a lower-priority on-demand GPU NodePool when Spot cannot satisfy Ollama demand."
+  type        = bool
+  default     = false
+}
+
+variable "enable_spot_to_spot_consolidation" {
+  description = "Allow Karpenter to replace underutilized Spot nodes with cheaper Spot capacity."
+  type        = bool
+  default     = false
+}
+
+variable "llm_on_demand_burst_gpu_limit" {
+  description = "Maximum single-GPU on-demand nodes in the optional Ollama burst NodePool."
+  type        = number
+  default     = 3
+
+  validation {
+    condition = (
+      var.llm_on_demand_burst_gpu_limit >= 1 &&
+      var.llm_on_demand_burst_gpu_limit <= 8 &&
+      floor(var.llm_on_demand_burst_gpu_limit) == var.llm_on_demand_burst_gpu_limit
+    )
+    error_message = "llm_on_demand_burst_gpu_limit must be a whole number between 1 and 8."
+  }
 }
 
 variable "llm_baseline_instance_types" {

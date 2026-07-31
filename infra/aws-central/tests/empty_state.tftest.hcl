@@ -132,10 +132,22 @@ run "empty_state_plan" {
       for name, manifest in kubectl_manifest.node_pool :
       manifest.yaml_body != null && (
         !startswith(name, "scan_") ||
-        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation")
+        (
+          strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
+          strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu")
+        )
       )
     ])
-    error_message = "Every scan NodePool must reject instance generations older than generation 5."
+    error_message = "Every scan NodePool must enforce the configured minimum instance generation and vCPU count."
+  }
+
+  assert {
+    condition = (
+      var.scan_min_instance_generation == 5 &&
+      var.scan_min_instance_vcpu == 2 &&
+      length(var.scan_instance_families) == 0
+    )
+    error_message = "Default scan capacity must preserve generation-5+, category-diversified behavior without excluding standard 2-vCPU family members."
   }
 
   assert {
@@ -357,6 +369,64 @@ run "remediation_enabled_plan" {
       ])
     )
     error_message = "Both remediation buckets must deny insecure transport and any explicit KMS downgrade or wrong-key write."
+  }
+}
+
+run "high_throughput_scan_pool" {
+  command = plan
+
+  variables {
+    name                                 = "ore-heaphound-ci"
+    region                               = "us-west-2"
+    anchor_bucket_name                   = "ore-heaphound-ci-anchor"
+    cluster_endpoint_public_access_cidrs = ["192.0.2.10/32"]
+    scan_instance_families               = ["m8a"]
+    scan_min_instance_generation         = 8
+    scan_min_instance_vcpu               = 16
+    scan_instance_vcpus                  = [16]
+    enable_llm_on_demand_burst           = true
+    llm_on_demand_burst_gpu_limit        = 3
+    enable_spot_to_spot_consolidation    = true
+    database_allocated_storage           = 400
+    database_max_allocated_storage       = 2000
+    database_iops                        = 12000
+    database_storage_throughput          = 500
+  }
+
+  assert {
+    condition = alltrue([
+      for name, manifest in kubectl_manifest.node_pool :
+      !startswith(name, "scan_") || (
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-family") &&
+        strcontains(manifest.yaml_body, "m8a") &&
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-generation") &&
+        strcontains(manifest.yaml_body, "\"7\"") &&
+        strcontains(manifest.yaml_body, "karpenter.k8s.aws/instance-cpu") &&
+        strcontains(manifest.yaml_body, "\"16\"")
+      )
+    ])
+    error_message = "The high-throughput scan profile must render m8a-only, generation-8+, exact 16-vCPU requirements for every scan NodePool."
+  }
+
+  assert {
+    condition = (
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"on-demand\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"nvidia.com/gpu\"") &&
+      var.llm_on_demand_burst_gpu_limit == 3 &&
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"WhenEmpty\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_spot"].yaml_body, "\"WhenEmpty\"")
+    )
+    error_message = "With Spot-to-Spot enabled, both elastic LLM pools must consolidate only when empty and the optional on-demand pool must remain bounded to three single-GPU nodes."
+  }
+
+  assert {
+    condition = (
+      aws_db_instance.postgres.allocated_storage == 400 &&
+      aws_db_instance.postgres.max_allocated_storage == 2000 &&
+      aws_db_instance.postgres.iops == 12000 &&
+      aws_db_instance.postgres.storage_throughput == 500
+    )
+    error_message = "The high-throughput RDS profile must preserve the reviewed 400-GiB, 12,000-IOPS, 500-MiB/s gp3 settings."
   }
 }
 
