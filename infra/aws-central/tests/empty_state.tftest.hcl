@@ -413,9 +413,10 @@ run "high_throughput_scan_pool" {
       strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"on-demand\"") &&
       strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"nvidia.com/gpu\"") &&
       var.llm_on_demand_burst_gpu_limit == 3 &&
-      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"WhenEmpty\"")
+      strcontains(kubectl_manifest.node_pool["llm_on_demand_burst"].yaml_body, "\"WhenEmpty\"") &&
+      strcontains(kubectl_manifest.node_pool["llm_spot"].yaml_body, "\"WhenEmpty\"")
     )
-    error_message = "The optional on-demand Ollama burst pool must be bounded to three single-GPU nodes and consolidate only when empty."
+    error_message = "With Spot-to-Spot enabled, both elastic LLM pools must consolidate only when empty and the optional on-demand pool must remain bounded to three single-GPU nodes."
   }
 
   assert {

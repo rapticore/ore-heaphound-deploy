@@ -3,20 +3,28 @@
 # values/central-eks.yaml and before the customer-private overlay.
 #
 # If the customer-private overlay replaces capacityAdvisor.catalog.profiles,
-# preserve the complete profile list and set the Tika profile's max_replicas
-# to the same ceiling. Helm replaces lists rather than merging profile entries.
+# preserve the complete profile list and keep the Tika and Presidio profile
+# ceilings aligned with stageMaxReplicas. Helm replaces lists rather than
+# merging profile entries.
 extraction:
   autoscaling:
     minReplicas: 24
   resources:
-    requests: { cpu: "500m", memory: "2Gi" }
+    # Production Tika pods consumed close to the 2-core limit. Reserve most of
+    # that demand so the scheduler does not CPU-overpack extraction nodes.
+    requests: { cpu: "1500m", memory: "2Gi" }
     limits: { cpu: "2", memory: "4Gi" }
 
 capacityAdvisor:
   stageMaxReplicas:
-    tika: 32
+    # Keep the proven 24-replica baseline. Forty is the smallest bounded
+    # headroom above the observed 32-replica saturation point, and Presidio is
+    # allowed to scale with the same input stream instead of becoming the next
+    # fixed bottleneck.
+    tika: 40
+    presidio: 40
   catalog:
-    version: builtin-balanced-m8a-v3-tika32
+    version: builtin-balanced-m8a-v4-tika40-presidio40
     profiles:
       - id: small
         stage: scan
@@ -49,7 +57,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 2000
         hourly_cost_microusd: 220000
         min_replicas: 1
-        max_replicas: 32
+        max_replicas: 40
       - id: presidio
         stage: entity_recognition
         capacity_class: standard
@@ -57,7 +65,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 20
+        max_replicas: 40
       - id: qwen
         stage: contextual
         capacity_class: gpu

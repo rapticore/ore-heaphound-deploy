@@ -32,13 +32,15 @@ capacityAdvisor:
       concurrency: 2
       placements: []
       resources:
-        # Large workers were idle during the sizing sample. Preserve the
-        # reviewed 16-GiB memory reservation until an active large-object peak
-        # proves a lower value is safe.
+        # The accompanying application release lets large workers spill down
+        # into standard and small work when their own band is empty. Keep this
+        # tested baseline only with that release; v0.1.0-develop.22 must use a
+        # zero large minimum. Preserve the reviewed 16-GiB reservation until an
+        # active large-object peak proves a lower value is safe.
         requests: { cpu: "2", memory: "16Gi" }
         limits: { cpu: "8", memory: "32Gi" }
   catalog:
-    version: builtin-balanced-m8a-v3-tika32
+    version: builtin-balanced-m8a-v4-tika40-presidio40
     profiles:
       - id: small
         stage: scan
@@ -71,7 +73,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 2000
         hourly_cost_microusd: 220000
         min_replicas: 1
-        max_replicas: 32
+        max_replicas: 40
       - id: presidio
         stage: entity_recognition
         capacity_class: standard
@@ -79,7 +81,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 20
+        max_replicas: 40
       - id: qwen
         stage: contextual
         capacity_class: gpu
@@ -90,10 +92,13 @@ capacityAdvisor:
         max_replicas: 8
 
 # These services were using more than their previous requests. Raising the
-# requests makes packing truthful without changing limits or replica ceilings.
+# requests makes packing truthful; the extraction overlay carries the matching
+# Tika and Presidio stage ceilings and complete capacity catalog.
 presidio:
   resources:
-    requests: { cpu: "1", memory: "1280Mi" }
+    # en_core_web_lg is roughly 800 MiB before request-serving overhead. The
+    # prior 1280-MiB reservation left too little measured runtime headroom.
+    requests: { cpu: "1", memory: "2Gi" }
     limits: { cpu: "2", memory: "2Gi" }
 
 localModels:

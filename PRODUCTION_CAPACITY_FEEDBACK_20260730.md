@@ -80,8 +80,11 @@ Terraform validation and mocked plan tests cover both the backward-compatible
 defaults and the high-throughput m8a profile.
 
 `values/high-throughput-extraction-eks.yaml` records the reusable Helm portion
-of the experiment: 24 minimum Tika replicas and a stage ceiling of 32. It is an
-optional additive overlay rather than a new global production default.
+of the experiment: the proven 24-replica Tika minimum, a 40-replica ceiling
+with bounded headroom above the observed 32-replica saturation point, and a
+matching Presidio ceiling so entity recognition does not become the next fixed
+bottleneck. It is an optional additive overlay rather than a new global
+production default.
 
 `values/high-throughput-workers-eks.yaml` records the follow-up bounded worker
 experiment: 120 small, 8 standard, and 15 large minimum replicas, for 143
@@ -90,14 +93,16 @@ worker pods and 542 worker processes. Its production-calibrated requests are:
 - small: 100m CPU and 256 MiB memory;
 - standard: 1.5 CPU and 1.5 GiB memory;
 - large: 2 CPU and 16 GiB memory;
-- Presidio: 1 CPU and 1.25 GiB memory;
+- Presidio: 1 CPU and 2 GiB memory;
 - Ollama: 2.5 CPU and 11 GiB memory.
 
-`values/high-throughput-extraction-eks.yaml` retains 24-32 Tika replicas while
-setting each request to 500m CPU and 2 GiB memory.
+`values/high-throughput-extraction-eks.yaml` retains the proven 24-replica Tika
+baseline while setting each request to 1.5 CPU and 2 GiB memory. The request is
+close to the observed 2-core consumption instead of inviting the scheduler to
+pack four times the measured CPU demand onto a node.
 Both complete catalog lists use
-`builtin-balanced-m8a-v3-tika32` so the recorded capacity identity changes
-with the resource and instance profile.
+`builtin-balanced-m8a-v4-tika40-presidio40` so the recorded capacity identity
+changes with the resource and instance profile.
 
 An attempted same-process-count rebalance to 96 small, 32 standard, and 15
 large was rejected by the signed v0.1.0-develop.22 chart's production
@@ -303,6 +308,29 @@ The family and exact CPU constraints resolve to `m8a.4xlarge`. At the
 USD 0.3715-0.7967/hour Spot across the three configured zones. Expected
 steady-state packing is approximately 7-9 nodes before topology, DaemonSet,
 and disruption headroom; use 8-10 as the operational planning range.
+
+## Release coupling and merge gate
+
+The 15-replica large-worker baseline is coupled to the accompanying
+application release. That release changes capacity claims so a large worker
+tries large work first, then standard and small work; it also gives Tika
+startup a bounded retry window instead of exiting after one saturated-service
+timeout. This makes the already-sized large pods useful when no object exceeds
+512 MiB and removes the extraction-readiness crash loop observed in the
+baseline.
+
+Do not apply `values/high-throughput-workers-eks.yaml` with
+`v0.1.0-develop.22` unchanged. Until the signed application release containing
+claim spill-down is installed, override `large.minReplicas` to zero. The
+deployment repository must consume the exact signed tag, chart, image digest,
+detector identity, and migration inventory produced by release automation; it
+must not predict those immutable coordinates from an uncommitted tree.
+
+The global `SpotToSpotConsolidation` feature gate does not authorize routine
+GPU churn in this profile. The always-ready GPU baseline is an EKS-managed
+on-demand node group, outside Karpenter consolidation. Both Karpenter-managed
+LLM pools use `WhenEmpty`, including when Spot-to-Spot is enabled, and the
+mocked high-throughput plan asserts that invariant.
 
 ## Rollback
 
