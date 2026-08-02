@@ -53,7 +53,7 @@ ORE_HEAPHOUND_PRIVATE_ADMISSION_VALUES=/secure/ore-heaphound/values/admission.ya
 ORE_HEAPHOUND_TERRAFORM_VARS=/secure/ore-heaphound/terraform/production.tfvars
 ORE_HEAPHOUND_TERRAFORM_BACKEND_CONFIG=/secure/ore-heaphound/terraform/backend.hcl
 
-ORE_HEAPHOUND_RDS_INSTANCE_ID=ore-heaphound-1e2a4e73
+ORE_HEAPHOUND_RDS_INSTANCE_ID=REPLACE_RDS_INSTANCE_ID
 ORE_HEAPHOUND_EXPECTED_DB_CLASS=db.m8g.4xlarge
 ORE_HEAPHOUND_RECONCILER_STATE_DIR=/var/lib/ore-heaphound-release
 ORE_HEAPHOUND_HEALTH_URL=https://heaphound.example.com/healthz
@@ -99,6 +99,11 @@ validated the paused-scan resume fix. The first reconciler-bearing release is
    and populate the non-secret configuration below. Do not run it inside an
    application container or grant the product ServiceAccounts Terraform/RDS
    administration.
+
+The next replacement, `v0.1.0-develop.23.2`, changes the migration inventory.
+The reconciler is required to stop on that difference. Use the agent-managed
+schema-changing procedure in `PRODUCTION_DEPLOYMENT.md`; do not weaken the
+automatic policy or bypass its stop.
 
 First run read-only modes:
 

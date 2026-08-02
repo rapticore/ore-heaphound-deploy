@@ -310,6 +310,65 @@ agent may detect a newer signed release and prepare a plan, but it may reconcile
 only the entire verified release unit through the approval boundary described
 under **Automatic release reconciliation**.
 
+## Upgrade develop.22 to develop.23.2
+
+`v0.1.0-develop.23.1` is withdrawn. Its admission chart placed the candidate
+and rollback workflow subjects in one keyless attestor, which the locked
+Kyverno verifier rejects. Do not patch, rebuild, or reuse any `.23.1` artifact.
+Use only the complete immutable `.23.2` release after exact-source CI and
+signature verification succeed.
+
+This is a schema-changing agent-managed upgrade; the automatic reconciler must
+stop on the migration inventory change and must not apply it unattended.
+
+1. Verify the `.23.2` annotated source tag, release/archive signatures,
+   checksums, images, charts, provenance/SBOMs, detector and model locks,
+   capability posture, and withdrawal metadata. The production contextual
+   model remains the approved `qwen2.5:7b-instruct` artifact; Presidio and all
+   native/secret scanners remain enabled.
+2. Pause active scans through the supported API and hold only release-owned
+   autoscalers. Establish the documented idle database baseline, then create
+   and wait for a fresh encrypted pre-upgrade snapshot. A snapshot from an
+   earlier attempt is evidence only after workload has resumed.
+3. Produce and review a fresh saved Terraform plan from customer-owned state
+   and variables. Apply only the explicitly approved infrastructure actions;
+   stop on an unreviewed database, network, identity, delete, replacement, or
+   customer-boundary change.
+4. Prove the signed migration runner on a disposable PostgreSQL database. The
+   candidate inventory advances from `0074` through
+   `0089_restore_dashboard_refresh_rollback_compatibility.sql`. Migrations
+   `0076` through `0083` are separate non-transactional concurrent index
+   operations; `0075` and `0084` through `0089` are transactional. Never edit,
+   combine, skip, or run these files manually.
+5. Install the exact signed `.23.2` admission chart first with two separate
+   single-identity attestors: candidate `.23.2` and current `.22`. Before the
+   control upgrade, server-side dry-run both exact signed image digests and
+   require both to pass. Continue to deny mutable, unsigned, unlisted,
+   wrong-digest, and wrong-identity images.
+6. Install the signed control chart with the customer overlays, immutable image
+   digests, migration Job, `--atomic`, and the approved timeout. Require the
+   migration ledger to end at `0089` before workloads roll and do not use SQL or
+   queue-row edits to force progress.
+7. Validate API, web, extraction, Presidio, Ollama, remediation, verification
+   preview, and every demanded scan-worker pool. Confirm the UI distinguishes
+   discovery completion from processing completion and does not issue
+   overlapping background refreshes.
+8. Clear only the approved release-owned autoscaler holds and resume each scan
+   exactly once through the supported API. Confirm ready work is claimed and
+   terminal counts advance.
+9. Compare RDS CPU, AAS, connections, lock/WAL waits, claim calls, heartbeat
+   updates, and completed units per minute with the pre-upgrade baseline. The
+   release batches claims per pod, backs off empty polls, and aggregates worker
+   presence to one 20-second row update per pod; stop on a material regression
+   rather than increasing worker ceilings to hide it.
+
+If application rollback is required, keep the forward migration ledger and
+roll Helm back only to the exact signed `.22` artifacts admitted above. Migration
+`0089` preserves the `.22` dashboard refresh entry point for that bounded
+rollback. Do not reverse SQL. Restoring the pre-upgrade snapshot is a separate
+destructive recovery decision requiring explicit approval and a full outage
+plan.
+
 ## Governed remediation
 
 Remediation is off unless it is explicitly requested. When it is in scope, the

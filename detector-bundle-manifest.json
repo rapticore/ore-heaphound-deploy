@@ -70,6 +70,10 @@
           "sha256": "685fc75a24f1b26e742bcf6ad9509322073b4ae7fe0b918cabeee7f32831e57a"
         },
         {
+          "path": "cmd/scan-worker/main.go",
+          "sha256": "534463f8fbf8097c40a44f21ea94e47dba5cfd8767d66425619ac8afd11e14bc"
+        },
+        {
           "path": "internal/avrosafe/decoder.go",
           "sha256": "906e0eff2223240f682c60ccb596a840ca5b99ded8417381e722132833afbce1"
         },
@@ -119,7 +123,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "ef58866018e2178c191944133e8bfeb42e56fbd29ffbdb8de6a3df7dbc119346"
+          "sha256": "70e4283493df028af3442d4997fe33c99740941267bb2833a60aacd33093e63a"
         },
         {
           "path": "internal/scanner/handler.go",
@@ -130,8 +134,12 @@
           "sha256": "3345751b2f14471d1012d157a24b0ab58885b66938464adfcc702d9babcfe0b7"
         },
         {
+          "path": "internal/worker/presence.go",
+          "sha256": "479f812056aeb386cfe3743194150b7d346afd64e5912d8f2c3cbeaa1357650b"
+        },
+        {
           "path": "internal/worker/worker.go",
-          "sha256": "eeba523dd2bb2506d00d2805eff6b56abeaea2bfb8eb258d9a3071f7db56939c"
+          "sha256": "6184582ee84b547a85b67f9c04dd6ff94aaad30601204a09c5beafac01d7e917"
         }
       ]
     },

@@ -9,6 +9,15 @@
       "reason_code": "migration_runner_transaction_incompatible",
       "reason": "Migration 0067 contains CREATE INDEX CONCURRENTLY but the signed runner executes it inside a transaction, causing SQLSTATE 25001 before any v20 migration commits.",
       "replacement": "v0.1.0-develop.21"
+    },
+    {
+      "tag": "v0.1.0-develop.23.1",
+      "tag_object": "c8b58a6cfb984e237c3e495e1fd216f3e4c5b69f",
+      "source_commit": "87e8d4d3b4f57d0a86eb301916a51b32fc204d6c",
+      "status": "withdrawn",
+      "reason_code": "kyverno_multiple_identities_unsupported",
+      "reason": "The admission chart combined the candidate and rollback workflow subjects in one keyless attestor, which the locked Kyverno verifier rejects before either signed image can be admitted.",
+      "replacement": "v0.1.0-develop.23.2"
     }
   ]
 }
