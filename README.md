@@ -11,6 +11,9 @@ use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,
 DNS/ACM, and one-approval agent workflow, use
 [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+That runbook also defines the installation agent's governed Helm-repair lane:
+it may restore production with a visibly distinct, approval-bound control chart
+and must reconcile the source patch into the next signed release.
 After the installation agent has established a healthy production release, use
 [AUTOMATIC_RELEASES.md](AUTOMATIC_RELEASES.md) to let a customer-owned scheduled
 runner reconcile conservative, fully signed application updates without

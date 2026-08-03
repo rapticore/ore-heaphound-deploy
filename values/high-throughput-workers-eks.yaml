@@ -99,7 +99,7 @@ presidio:
     # en_core_web_lg is roughly 800 MiB before request-serving overhead. The
     # prior 1280-MiB reservation left too little measured runtime headroom.
     requests: { cpu: "1", memory: "2Gi" }
-    limits: { cpu: "2", memory: "2Gi" }
+    limits: { cpu: "2", memory: "4Gi" }
 
 localModels:
   ollama:

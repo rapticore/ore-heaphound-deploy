@@ -42,6 +42,21 @@ readonly EXPECTED_DB_CLASS="${ORE_HEAPHOUND_EXPECTED_DB_CLASS:-}"
 readonly STATE_DIR="${ORE_HEAPHOUND_RECONCILER_STATE_DIR:-}"
 readonly HEALTH_URL="${ORE_HEAPHOUND_HEALTH_URL:-}"
 readonly AUTOMATIC_APPLY="${ORE_HEAPHOUND_AUTOMATIC_APPLY:-false}"
+# Optional. When set, the reconciler asks the DEPLOYMENT'S OWN API which release
+# the vendor recommends, instead of taking the newest in the channel. It points
+# at the installation, never at the vendor: the release runner needs no vendor
+# network access, and the recommendation reaches it through a component the
+# customer already runs and trusts.
+#
+# The recommendation is advisory and narrowing only. Whatever tag comes out of
+# it still goes through prove_annotated_public_tag, the signed archive and
+# manifest checks, image signature verification, and the withdrawal list — every
+# check that runs today runs unchanged. The vendor can influence WHICH genuine
+# release is selected; it cannot make an unsigned artifact installable, and it
+# cannot cause an upgrade to be skipped silently, because an unusable
+# recommendation falls back to the existing selection with a message.
+readonly RELEASE_TARGET_URL="${ORE_HEAPHOUND_RELEASE_TARGET_URL:-}"
+readonly RELEASE_TARGET_TOKEN="${ORE_HEAPHOUND_RELEASE_TARGET_TOKEN:-}"
 readonly REMOTE_EXECUTION_PLANES="${ORE_HEAPHOUND_REMOTE_EXECUTION_PLANES:-unknown}"
 readonly TIMEOUT="${ORE_HEAPHOUND_ROLLOUT_TIMEOUT:-30m}"
 readonly SOURCE_REPOSITORY="rapticore/ore_heaphound"
@@ -93,6 +108,10 @@ if [[ "$MODE" == "apply" ]]; then
     echo "automatic central reconciliation requires an explicit ORE_HEAPHOUND_REMOTE_EXECUTION_PLANES=false; installed remote planes require installation-agent orchestration" >&2
     exit 1
   }
+  [[ ! -e "${STATE_DIR}/active-helm-repair.json" ]] || {
+    echo "automatic reconciliation stopped: an installation-agent Helm repair is active and must be reconciled into a new signed release first" >&2
+    exit 1
+  }
 fi
 
 readonly WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ore-heaphound-release.XXXXXX")"
@@ -127,13 +146,12 @@ current_tag() {
 candidate_is_newer() {
   jq -en --arg current "$1" --arg candidate "$2" '
     def parts:
-      capture("^v(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(-develop\\.(?<develop>[0-9]+))?$")
-      | [
+      capture("^v(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(-develop\\.(?<develop>[0-9]+(?:\\.[0-9]+)*))?$")
+      | ([
           (.major | tonumber),
           (.minor | tonumber),
-          (.patch | tonumber),
-          ((.develop // "-1") | tonumber)
-        ];
+          (.patch | tonumber)
+        ] + if .develop then (.develop | split(".") | map(tonumber)) else [-1] end);
     ($candidate | parts) > ($current | parts)
   '
 }
@@ -154,10 +172,79 @@ release_index() {
   curl "${curl_args[@]}" "$RELEASE_API"
 }
 
+# recommended_tag prints the vendor's recommendation, or nothing.
+#
+# Every failure mode prints nothing and returns success, so the caller falls
+# back to ordinary channel selection: an unreachable API, a malformed response,
+# or a tag that is not in the release index must never stop a deployment
+# upgrading. The tag is re-validated here against the same narrow charset the
+# product and Central both enforce, because this value is about to be used in
+# shell.
+recommended_tag() {
+  [[ -n "$RELEASE_TARGET_URL" ]] || return 0
+  local current_tag_value="${1:-}"
+  local args=(--fail --silent --show-error --max-time 15)
+  [[ -n "$RELEASE_TARGET_TOKEN" ]] && args+=(--header "Authorization: Bearer ${RELEASE_TARGET_TOKEN}")
+  local body
+  body="$(curl "${args[@]}" "$RELEASE_TARGET_URL" 2>/dev/null)" || {
+    echo "release recommendation unavailable; selecting from the channel as configured" >&2
+    return 0
+  }
+  local tag
+  tag="$(jq -r '.release_tag // ""' <<<"$body" 2>/dev/null)" || return 0
+  [[ -n "$tag" ]] || return 0
+  if ! [[ "$tag" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]{0,99}$ ]]; then
+    echo "release recommendation is not a well-formed tag; ignoring it" >&2
+    return 0
+  fi
+  local channel_pattern
+  if [[ "$CHANNEL" == "develop" ]]; then
+    channel_pattern='^v[0-9]+\.[0-9]+\.[0-9]+-develop\.[0-9]+(\.[0-9]+)*$'
+  else
+    channel_pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
+  fi
+  if ! [[ "$tag" =~ $channel_pattern ]]; then
+    echo "release recommendation is outside the configured $CHANNEL channel; ignoring it" >&2
+    return 0
+  fi
+  # The recommendation must name a release that actually exists in the public
+  # index. Central names a release; it does not get to invent one.
+  if ! release_index | jq -e --arg tag "$tag" \
+      '[.[] | select((.draft // false) == false) | .tag_name] | index($tag)' >/dev/null; then
+    echo "recommended release $tag is not in the public release index; ignoring it" >&2
+    return 0
+  fi
+  # An ordinary channel candidate fails closed when its public tag is not
+  # annotated. A vendor recommendation is narrower: if the named release is
+  # unusable, it must disappear and let ordinary channel selection continue.
+  # Check that distinction before latest_tag commits to the recommendation.
+  if ! prove_annotated_public_tag "$tag"; then
+    echo "recommended release $tag has no annotated public tag; selecting from the channel as configured" >&2
+    return 0
+  fi
+  # A delayed Central response must not turn the optional recommendation path
+  # into a downgrade request that stops reconciliation. Recommending the
+  # currently installed release is an intentional hold; anything older is
+  # stale and falls back to normal channel selection.
+  if [[ -n "$current_tag_value" && "$tag" != "$current_tag_value" ]] &&
+      ! candidate_is_newer "$current_tag_value" "$tag" >/dev/null; then
+    echo "release recommendation is older than the deployed release; ignoring it" >&2
+    return 0
+  fi
+  printf '%s' "$tag"
+}
+
 latest_tag() {
+  local recommended
+  recommended="$(recommended_tag "${CURRENT_TAG:-}")"
+  if [[ -n "$recommended" ]]; then
+    printf '%s' "$recommended"
+    return 0
+  fi
+
   local pattern
   if [[ "$CHANNEL" == "develop" ]]; then
-    pattern='^v[0-9]+\.[0-9]+\.[0-9]+-develop\.[0-9]+$'
+    pattern='^v[0-9]+\.[0-9]+\.[0-9]+-develop\.[0-9]+(\.[0-9]+)*$'
   else
     pattern='^v[0-9]+\.[0-9]+\.[0-9]+$'
   fi
@@ -171,13 +258,12 @@ latest_tag() {
         | {
             tag: .,
             parts: (
-              capture("^v(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(-develop\\.(?<develop>[0-9]+))?$")
-              | [
+              capture("^v(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(-develop\\.(?<develop>[0-9]+(?:\\.[0-9]+)*))?$")
+              | ([
                   (.major | tonumber),
                   (.minor | tonumber),
-                  (.patch | tonumber),
-                  ((.develop // "-1") | tonumber)
-                ]
+                  (.patch | tonumber)
+                ] + if .develop then (.develop | split(".") | map(tonumber)) else [-1] end)
             )
           }
       ]

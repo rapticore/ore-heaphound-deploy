@@ -29,6 +29,15 @@ infrastructure, access, detector/model, capacity, network, schema, or maturity
 change stops and produces an installation-agent handoff. It never applies a
 partial release.
 
+An installation agent may use the governed control-chart repair lane in
+`PRODUCTION_DEPLOYMENT.md` when a signed chart prevents production from becoming
+healthy. While `${ORE_HEAPHOUND_RECONCILER_STATE_DIR}/active-helm-repair.json`
+exists, unattended `apply` stops before downloading or changing a release. The
+marker is removed only after the repair has been merged, released as a new
+signed version, installed, and closed with `reconcile-helm-repair.sh close`.
+This prevents a scheduled update from silently replacing an operational repair
+or treating local chart bytes as signed release content.
+
 Before Helm changes, apply verifies the approved RDS instance is available,
 Single-AZ, and has no pending modifications, then creates and waits for a manual
 snapshot. Admission is upgraded first with exactly two allowed release

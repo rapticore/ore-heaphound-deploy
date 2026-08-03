@@ -2103,6 +2103,17 @@ kubectl -n sddp get deployment -o name |
 kubectl -n sddp get scaledobject
 ```
 
+Prove the exact private-service path that failed the develop.23.2 rollout. The
+released probe uses the signed application image and the live workload labels:
+verification-preview must reach extraction on its Tika port, while an
+unapproved component must remain denied. Both results are required; do not
+qualify a release from rendered YAML alone.
+
+```bash
+scripts/verify-private-service-flows.sh \
+  sddp ore-heaphound "$APPLICATION_IMAGE"
+```
+
 Use customer-controlled internal DNS/TLS for the web endpoint. A remote worker
 gateway, when tested, must use TLS passthrough and a dedicated client CA; do
 not expose PostgreSQL or an unauthenticated application endpoint.
@@ -2152,7 +2163,7 @@ or production identifiers.
 | `detector_holdout` | Promoted detector manifest, signed holdout, and prompt-injection gate all pass | `manifest`, `signature_bundle` |
 | `extraction_hostile_formats` | OCR passes; corrupt/hostile inputs remain bounded; time and memory limits hold | `junit`, `log` |
 | `image_signature_admission` | Signed release is admitted; mutable and unsigned images are denied server-side | `kubernetes_resource`, `log` |
-| `network_policy_and_role_separation` | Tika egress is denied; scan role cannot write; remediation role remains separate and scoped | `kubernetes_resource`, `packet_capture_summary` |
+| `network_policy_and_role_separation` | Verification-preview reaches private Tika on TCP 9998; an unapproved component is denied; Tika egress is denied; scan role cannot write; remediation role remains separate and scoped | `kubernetes_resource`, `packet_capture_summary` |
 | `offline_evidence_verification` | Offline report verification passes and the anchor object has COMPLIANCE retention | `offline_verification_report`, `signature_bundle` |
 | `queue_scale_and_interruption` | KEDA load/polling, scale from zero, Spot interruption, reclaim, and finding correctness pass | `benchmark`, `junit` |
 | `release_custody` | Release/archive signatures, hashes, object versions, and COMPLIANCE retention match | `cloud_api_receipt`, `signature_bundle` |
@@ -2272,6 +2283,11 @@ After the rehearsal:
 
 If any image, chart, migration, model, prompt, detector manifest, or Helm value
 that affects results changes, issue a new release and repeat qualification.
+An installation-agent `+repair` chart may restore service while that release is
+prepared, but it is not eligible for a passing qualification receipt. Preserve
+its private repair record, reconcile its sanitized source patch into the new
+release, deploy the signed replacement, close the active repair marker, and run
+the live checks again against the exact immutable artifacts.
 
 Set `RELEASE_TAG` to the new stable tag, download it into a fresh checkout, and
 repeat sections 3 through 10:

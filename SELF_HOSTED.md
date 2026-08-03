@@ -59,6 +59,13 @@ credentials to either `main` or a release tag. Start an overlay by copying the
 matching released values file, then store and review that copy in the
 customer's private configuration repository.
 
+If a signed control chart itself is defective, the installation agent may use
+the governed `+repair` workflow in `PRODUCTION_DEPLOYMENT.md`. The repair must
+remain visibly distinct from the signed release, preserve exact images and
+migration hooks, and be reconciled into a new signed release. Only its sanitized
+chart-source patch returns to the source repository; private values, rendered
+manifests, and operational evidence remain customer-owned.
+
 ## Deployment authorization
 
 Starting the run permits all non-mutating preparation. The agent performs

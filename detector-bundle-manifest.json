@@ -67,11 +67,11 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "685fc75a24f1b26e742bcf6ad9509322073b4ae7fe0b918cabeee7f32831e57a"
+          "sha256": "8d5b8aef81d95d44826fdf8634a1d457dba0f795af0ac1c943e76f3ea82acd77"
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "534463f8fbf8097c40a44f21ea94e47dba5cfd8767d66425619ac8afd11e14bc"
+          "sha256": "09157e1138b84788e4e5e703ad74b2cb6f6179154e895b5bb0de621591bd334c"
         },
         {
           "path": "internal/avrosafe/decoder.go",
@@ -170,7 +170,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "685fc75a24f1b26e742bcf6ad9509322073b4ae7fe0b918cabeee7f32831e57a"
+          "sha256": "8d5b8aef81d95d44826fdf8634a1d457dba0f795af0ac1c943e76f3ea82acd77"
         },
         {
           "path": "internal/detection/locate.go",
@@ -251,11 +251,11 @@
       "inputs": [
         {
           "path": "deploy/helm/sddp/templates/presidio.yaml",
-          "sha256": "9e74adaec0f091b5ded5d46f67e7880ef314f49e85f8ea9bcb9b40e8760c7829"
+          "sha256": "c354510e65d09334a82c9264a41e7a51b8a3b626f83ce7aafcba710ed0f0b25c"
         },
         {
           "path": "internal/detection/presidio/presidio.go",
-          "sha256": "cacfe1f48a403ffff81ab73f9bfd8125845e179bbd48f27a047cd2a09783fd2b"
+          "sha256": "27f8f9647bb615a682c27f8579072ef631c8fc025ef3216fcfd7fe414eaa49ba"
         }
       ],
       "limitations": [

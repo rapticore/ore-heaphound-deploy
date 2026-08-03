@@ -156,6 +156,106 @@ admission identities, atomic `.22` control rollout, then installation of the
 customer-owned scheduler. Later compatible application-only releases can use
 the unattended lane.
 
+## Governed production Helm repair
+
+The installation agent is allowed to correct the **control Helm chart** when a
+released manifest prevents an otherwise verified application from becoming
+healthy. Typical repairs include a missing private NetworkPolicy flow, an
+incorrect probe, a resource or scheduling constraint, a Service selector, a
+PDB, or other workload wiring. This is an emergency, approval-bound production
+repair—not a modification of the signed release and not an unattended update.
+
+Never edit a signed chart package in place or describe the result as that
+signed release. Unpack the exact verified chart package into a customer-owned
+temporary workspace, edit that copy, and use
+`scripts/reconcile-helm-repair.sh plan` to derive a chart with a visible
+`+repair.<digest>` version. The helper refuses changes to `Chart.yaml`, chart
+dependencies, CRDs, the migration template, any rendered Helm hook, or the
+signed runtime image inventory. Admission policy, Terraform, application code,
+database migrations, and image contents therefore remain outside this repair
+lane. A repair that needs any of them must be implemented as a new signed
+release instead.
+
+The installation agent may author permanent fixes to any chart under
+`deploy/helm/` on the reviewed source branch. The control-chart helper is the
+only local live-repair lane because it can mechanically preserve admission,
+images, and migration behavior. Admission-chart, execution-plane, CRD,
+dependency, or application-binary changes must pass exact-source CI and ship in
+the replacement signed release before they are applied to production.
+
+Use a permission-restricted customer configuration outside the checkout:
+
+```sh
+ORE_HEAPHOUND_BASE_CONTROL_CHART=/secure/releases/sddp-BASE_VERSION.tgz
+ORE_HEAPHOUND_BASE_CONTROL_CHART_SHA256=REPLACE_FROM_SIGNED_RELEASE_MANIFEST
+ORE_HEAPHOUND_BASE_RELEASE_TAG=vX.Y.Z-develop.N
+ORE_HEAPHOUND_REPAIR_CONTROL_CHART_DIR=/secure/work/control-chart-repair
+ORE_HEAPHOUND_RELEASE_VALUES=/secure/releases/values/central-eks.yaml
+ORE_HEAPHOUND_PRIVATE_VALUES=/secure/ore-heaphound/values/production.yaml
+ORE_HEAPHOUND_RECONCILER_STATE_DIR=/var/lib/ore-heaphound-release
+ORE_HEAPHOUND_REPAIR_CHANGE_REF=REPLACE_APPROVED_CHANGE_REFERENCE
+ORE_HEAPHOUND_NAMESPACE=sddp
+ORE_HEAPHOUND_CONTROL_RELEASE=ore-heaphound
+ORE_HEAPHOUND_EXPECTED_CURRENT_CONTROL_CHART=sddp-REPLACE_RUNNING_VERSION
+ORE_HEAPHOUND_ROLLOUT_TIMEOUT=30m
+ORE_HEAPHOUND_HEALTH_URL=https://heaphound.example.com/healthz
+```
+
+Plan first:
+
+```sh
+customer-deploy/scripts/reconcile-helm-repair.sh plan \
+  /secure/ore-heaphound/helm-repair.env
+```
+
+The plan produces a private bundle containing the distinct chart package,
+repository-applicable `source.patch`, a rendered diff, an invariant record, and
+one approval SHA-256. The rendered files can contain customer identifiers and
+must remain in the customer evidence store. Review the source and rendered
+diffs, verify the change is the minimum healthy repair, create and verify the
+normal pre-change database snapshot, and obtain approval for that exact digest.
+Changes that expand RBAC, source access, public ingress/egress, TLS scope, or
+cost class are material deviations and require those effects to be explicit in
+the new approval packet even when the helper can render them.
+
+Add the following values to the same private configuration only after approval:
+
+```sh
+ORE_HEAPHOUND_REPAIR_BUNDLE=/var/lib/ore-heaphound-release/helm-repair-REPLACE
+ORE_HEAPHOUND_REPAIR_APPLY=true
+ORE_HEAPHOUND_REPAIR_APPROVED_SHA256=REPLACE_EXACT_PLAN_DIGEST
+```
+
+Then run `reconcile-helm-repair.sh apply`. It performs an atomic Helm upgrade,
+waits for every Deployment, runs the configured health probe, and writes
+`active-helm-repair.json` in the reconciler state directory. The scheduled
+signed-release reconciler refuses to overwrite an active repair. Run the full
+release smoke tests after apply. Do not use `kubectl edit`, an unrecorded
+post-renderer, or a second untracked patch.
+
+An active repair is operational recovery, not a qualified immutable release.
+Reconcile it back immediately:
+
+1. copy only the sanitized `source.patch` to a reviewed source branch; never
+   copy the private values, rendered diff, live manifests, or customer evidence;
+2. generalize customer-specific constants into validated Helm values;
+3. add a render regression test for the failure and run exact-source CI;
+4. publish a new immutable signed release containing the source fix;
+5. verify that release's render preserves or deliberately supersedes the live
+   repair, then install it atomically and complete live qualification; and
+6. set `ORE_HEAPHOUND_REPAIR_CLOSE=true`,
+   `ORE_HEAPHOUND_RECONCILED_RELEASE`, and its exact
+   `ORE_HEAPHOUND_RECONCILED_SOURCE_COMMIT`; point
+   `ORE_HEAPHOUND_RECONCILED_CONTROL_CHART` at the verified signed package and
+   set `ORE_HEAPHOUND_RECONCILED_CONTROL_CHART_SHA256` to its digest from the
+   signed release manifest; then run
+   `reconcile-helm-repair.sh close`.
+
+Close verifies that the live chart is the declared non-repair version, waits
+for readiness, archives the repair record, and removes only the active marker.
+Do not close a repair merely because a pull request or tag exists—the signed
+replacement must be running and healthy first.
+
 ## Live verification on a release upgrade
 
 Production verification uses its own two-replica source-reading Deployment,
@@ -467,4 +567,5 @@ in the approved packet, and report the exact blocker. Never bypass admission,
 weaken TLS, widen a source CIDR, disable deletion protection during deployment
 or operation, or fall back to a different release. Deletion protection may be
 disabled only by the separately approved, exact decommission procedure in
-`STAGING_QUALIFICATION.md`.
+`STAGING_QUALIFICATION.md`. Production with an active `+repair` chart may be
+reported as operationally recovered, but not release-qualified or reconciled.
