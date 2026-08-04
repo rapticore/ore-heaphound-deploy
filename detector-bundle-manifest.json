@@ -251,7 +251,7 @@
       "inputs": [
         {
           "path": "deploy/helm/sddp/templates/presidio.yaml",
-          "sha256": "c354510e65d09334a82c9264a41e7a51b8a3b626f83ce7aafcba710ed0f0b25c"
+          "sha256": "f0a423476d69ee09dbe0c9f599c49fab9cd1634d78196d9706e49627ded19e47"
         },
         {
           "path": "internal/detection/presidio/presidio.go",

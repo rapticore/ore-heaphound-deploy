@@ -10,7 +10,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:191bcebf80c4299c792e49a01343797e058ffae3e8d1092182f0ed1fcb712cbc
+  digest: sha256:9e498d366032a90a7650b597b1792c28c9afe020fb58619d187081fef463701e
 
 extraction:
   enabled: true
@@ -26,7 +26,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:1c046c71321e911759b59f3918e7b395e31af10a291677fd114fd8a119a0be2b
+    digest: sha256:e75d646432e7daffec970228ab79180284f15d33c6b3fe1823837e68e615cd72
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -46,6 +46,9 @@ anchors:
 
 controlPlane:
   replicas: 3
+  rollout:
+    maxUnavailable: 1
+    maxSurge: 0
   staticAuth:
     enabled: true
 
@@ -59,6 +62,9 @@ verificationPreview:
 web:
   enabled: true
   replicas: 3
+  rollout:
+    maxUnavailable: 1
+    maxSurge: 0
   managedUsers: true
   secureCookie: true
   baseURL: https://REPLACE_APPLICATION_HOST
@@ -76,7 +82,7 @@ scanWorkers:
   sharding:
     enabled: true
   rulesetVersion: native:builtin-v7|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:7a60a5bc6f66614803e76e406fd7151b7b5627ee7f1ba5584a99cfa80db1b596
+  detectorManifestDigest: sha256:d7988b3055ea0ac7562594bb9e6ab823cc8bbd7e551c38cc21b0cd76ed78d2f7
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct
@@ -118,6 +124,8 @@ capacityAdvisor:
 
 presidio:
   enabled: true
+  workers: "2"
+  gunicornArgs: "--timeout 300 --graceful-timeout 300"
   image:
     repository: ghcr.io/data-privacy-stack/presidio-analyzer
     tag: 2.2.362

@@ -7,6 +7,13 @@ knows, performs read-only discovery, presents one consolidated change packet,
 and then completes the approved deployment without requesting permission for
 each routine step.
 
+The specifically authorized `v0.1.0-develop.23.4` upgrade is governed by
+[`DEPLOYMENT_AGENT_V23_4.md`](DEPLOYMENT_AGENT_V23_4.md). Its explicit
+no-snapshot policy and bounded multi-chart repair authority take precedence
+over generic snapshot and control-chart-only language in this runbook for that
+exact rollout. Because the automatic reconciler's `apply` mode creates a
+snapshot, the `.23.4` directive requires an agent-managed execution.
+
 The next `develop` prerelease is a qualification candidate, not a stable
 production release. Promote it to a stable signed tag only after its exact
 artifacts have all required qualification receipts. Never relabel or modify a
@@ -183,6 +190,14 @@ images, and migration behavior. Admission-chart, execution-plane, CRD,
 dependency, or application-binary changes must pass exact-source CI and ship in
 the replacement signed release before they are applied to production.
 
+When a second chart-only defect is discovered after a governed repair is
+active, the helper may plan a cumulative repair from the exact active repair
+package by setting `ORE_HEAPHOUND_REPAIR_STACK_ON_ACTIVE=true`. The planned
+bundle binds and retains the parent active record; the agent must not use that
+flag with a different release, chart checksum, Helm target, or live chart. The
+helper verifies each selected Deployment individually because `kubectl rollout
+status` does not support a selector argument.
+
 Use a permission-restricted customer configuration outside the checkout:
 
 ```sh
@@ -197,6 +212,9 @@ ORE_HEAPHOUND_REPAIR_CHANGE_REF=REPLACE_APPROVED_CHANGE_REFERENCE
 ORE_HEAPHOUND_NAMESPACE=sddp
 ORE_HEAPHOUND_CONTROL_RELEASE=ore-heaphound
 ORE_HEAPHOUND_EXPECTED_CURRENT_CONTROL_CHART=sddp-REPLACE_RUNNING_VERSION
+# Set only when the base package and expected live chart are the exact active
+# repair recorded in the state directory.
+ORE_HEAPHOUND_REPAIR_STACK_ON_ACTIVE=false
 ORE_HEAPHOUND_ROLLOUT_TIMEOUT=30m
 ORE_HEAPHOUND_HEALTH_URL=https://heaphound.example.com/healthz
 ```

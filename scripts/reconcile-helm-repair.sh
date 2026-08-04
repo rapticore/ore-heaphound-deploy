@@ -42,6 +42,7 @@ readonly EXPECTED_CURRENT_CHART="${ORE_HEAPHOUND_EXPECTED_CURRENT_CONTROL_CHART:
 readonly TIMEOUT="${ORE_HEAPHOUND_ROLLOUT_TIMEOUT:-30m}"
 readonly APPLY_APPROVED="${ORE_HEAPHOUND_REPAIR_APPLY:-false}"
 readonly APPROVED_SHA256="${ORE_HEAPHOUND_REPAIR_APPROVED_SHA256:-}"
+readonly STACK_ON_ACTIVE="${ORE_HEAPHOUND_REPAIR_STACK_ON_ACTIVE:-false}"
 readonly HEALTH_URL="${ORE_HEAPHOUND_HEALTH_URL:-}"
 readonly CLOSE_APPROVED="${ORE_HEAPHOUND_REPAIR_CLOSE:-false}"
 readonly RECONCILED_RELEASE="${ORE_HEAPHOUND_RECONCILED_RELEASE:-}"
@@ -130,6 +131,21 @@ extract_hooks() {
   ' "$1"
 }
 
+wait_for_release_deployments() {
+  local found=false resource
+  while IFS= read -r resource; do
+    [[ -n "$resource" ]] || continue
+    found=true
+    kubectl --namespace "$NAMESPACE" rollout status "$resource" --timeout "$TIMEOUT"
+  done < <(kubectl --namespace "$NAMESPACE" get deployment \
+    --selector "app.kubernetes.io/instance=${CONTROL_RELEASE}" \
+    --output name)
+  [[ "$found" == "true" ]] || {
+    echo "control release has no selected Deployments to verify" >&2
+    return 1
+  }
+}
+
 verify_bundle() {
   local bundle="$1"
   require_absolute_directory ORE_HEAPHOUND_REPAIR_BUNDLE "$bundle"
@@ -184,16 +200,39 @@ plan_repair() {
     echo "ORE_HEAPHOUND_REPAIR_CHANGE_REF is required and must be at most 200 characters" >&2
     exit 2
   }
-  [[ "$EXPECTED_CURRENT_CHART" =~ ^sddp-[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]] || {
+  [[ "$EXPECTED_CURRENT_CHART" =~ ^sddp-[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?([+_][0-9A-Za-z._-]+)?$ ]] || {
     echo "ORE_HEAPHOUND_EXPECTED_CURRENT_CONTROL_CHART must bind the plan to the current Helm chart" >&2
     exit 2
   }
-  [[ ! -e "$ACTIVE_MARKER" ]] || {
-    echo "an active Helm repair already exists; reconcile or close it before planning another" >&2
-    exit 1
-  }
+  local parent_active=false parent_record_sha256=""
+  if [[ -e "$ACTIVE_MARKER" ]]; then
+    [[ "$STACK_ON_ACTIVE" == "true" ]] || {
+      echo "an active Helm repair already exists; set ORE_HEAPHOUND_REPAIR_STACK_ON_ACTIVE=true to plan a recorded cumulative repair" >&2
+      exit 1
+    }
+    jq -e --arg namespace "$NAMESPACE" --arg release "$CONTROL_RELEASE" \
+      '.status == "active" and .target.namespace == $namespace and .target.helm_release == $release' \
+      "$ACTIVE_MARKER" >/dev/null || {
+      echo "active Helm repair marker is invalid or belongs to another target" >&2
+      exit 1
+    }
+    [[ "$EXPECTED_CURRENT_CHART" == "$(jq -er '.applied_chart' "$ACTIVE_MARKER")" ]] || {
+      echo "stacked repair must bind ORE_HEAPHOUND_EXPECTED_CURRENT_CONTROL_CHART to the active repair" >&2
+      exit 1
+    }
+    [[ "$BASE_RELEASE_TAG" == "$(jq -er '.base_release' "$ACTIVE_MARKER")" ]] || {
+      echo "stacked repair changed its signed base release" >&2
+      exit 1
+    }
+    [[ "$BASE_CHART_SHA256" == "$(jq -er '.repair_chart.sha256' "$ACTIVE_MARKER")" ]] || {
+      echo "stacked base chart digest does not match the active repair record" >&2
+      exit 1
+    }
+    parent_active=true
+    parent_record_sha256="$(sha256_file "$ACTIVE_MARKER")"
+  fi
   [[ "$(sha256_file "$BASE_CHART")" == "$BASE_CHART_SHA256" ]] || {
-    echo "base chart does not match the signed release-manifest digest" >&2
+    echo "base chart does not match its approved signed or active-repair digest" >&2
     exit 1
   }
   [[ -f "${REPAIR_CHART_DIR}/Chart.yaml" ]] || {
@@ -268,11 +307,21 @@ plan_repair() {
     echo "base chart metadata is incomplete" >&2
     exit 1
   }
-  [[ "$base_version" == "${BASE_RELEASE_TAG#v}" ]] || {
-    echo "base chart version does not match ORE_HEAPHOUND_BASE_RELEASE_TAG" >&2
-    exit 1
-  }
-  repair_version="${base_version}+repair.${patch_sha:0:12}"
+  local signed_base_version="${BASE_RELEASE_TAG#v}" repair_id
+  if [[ "$parent_active" == "true" ]]; then
+    [[ "$base_version" == "${signed_base_version}+repair."* ]] || {
+      echo "stacked base chart version is not derived from ORE_HEAPHOUND_BASE_RELEASE_TAG" >&2
+      exit 1
+    }
+    repair_id="$(printf '%s:%s' "$parent_record_sha256" "$patch_sha" | sha256sum | awk '{print $1}')"
+  else
+    [[ "$base_version" == "$signed_base_version" ]] || {
+      echo "base chart version does not match ORE_HEAPHOUND_BASE_RELEASE_TAG" >&2
+      exit 1
+    }
+    repair_id="$patch_sha"
+  fi
+  repair_version="${signed_base_version}+repair.${repair_id:0:12}"
 
   local package_output repair_package
   package_output="$(helm package "${work_dir}/repair/${chart_name}" \
@@ -316,7 +365,10 @@ plan_repair() {
   }
 
   local bundle
-  bundle="${STATE_DIR}/helm-repair-${patch_sha:0:12}"
+  # A cumulative repair is identified by both its parent record and its source
+  # patch. Using repair_id avoids colliding with an older bundle if the same
+  # patch is ever applied on top of a different governed parent.
+  bundle="${STATE_DIR}/helm-repair-${repair_id:0:12}"
   [[ ! -e "$bundle" ]] || {
     echo "repair bundle already exists: $bundle" >&2
     exit 1
@@ -340,6 +392,8 @@ plan_repair() {
     --arg namespace "$NAMESPACE" \
     --arg helm_release "$CONTROL_RELEASE" \
     --arg expected_current_chart "$EXPECTED_CURRENT_CHART" \
+    --argjson stacked_on_active "$parent_active" \
+    --arg parent_active_record_sha256 "$parent_record_sha256" \
     --arg release_values_sha256 "$(if [[ -n "$RELEASE_VALUES" ]]; then sha256_file "$RELEASE_VALUES"; fi)" \
     --arg private_values_sha256 "$(sha256_file "$PRIVATE_VALUES")" \
     '{
@@ -352,6 +406,10 @@ plan_repair() {
         namespace: $namespace,
         helm_release: $helm_release,
         expected_current_chart: $expected_current_chart
+      },
+      parent_repair: {
+        stacked: $stacked_on_active,
+        active_record_sha256: $parent_active_record_sha256
       },
       inputs: {
         release_values_sha256: $release_values_sha256,
@@ -374,6 +432,9 @@ plan_repair() {
         render_diff_sha256: $render_diff_sha256
       }
     }' >"${bundle}/repair-record.json"
+  if [[ "$parent_active" == "true" ]]; then
+    cp "$ACTIVE_MARKER" "${bundle}/parent-active-repair.json"
+  fi
   sha256_file "${bundle}/repair-record.json" >"${bundle}/approval.sha256"
   chmod 0600 "${bundle}"/*
 
@@ -408,10 +469,25 @@ apply_repair() {
     echo "repair approval digest does not match the planned bundle" >&2
     exit 1
   }
-  [[ ! -e "$ACTIVE_MARKER" ]] || {
-    echo "an active Helm repair already exists" >&2
-    exit 1
-  }
+  local stacked parent_record_sha256
+  stacked="$(jq -r '.parent_repair.stacked // false' "${BUNDLE_DIR}/repair-record.json")"
+  parent_record_sha256="$(jq -r '.parent_repair.active_record_sha256 // ""' "${BUNDLE_DIR}/repair-record.json")"
+  if [[ "$stacked" == "true" ]]; then
+    [[ -s "$ACTIVE_MARKER" && -s "${BUNDLE_DIR}/parent-active-repair.json" ]] || {
+      echo "stacked repair lost its active parent record" >&2
+      exit 1
+    }
+    [[ "$(sha256_file "$ACTIVE_MARKER")" == "$parent_record_sha256" && \
+        "$(sha256_file "${BUNDLE_DIR}/parent-active-repair.json")" == "$parent_record_sha256" ]] || {
+      echo "active parent repair changed after the stacked plan was approved" >&2
+      exit 1
+    }
+  else
+    [[ ! -e "$ACTIVE_MARKER" ]] || {
+      echo "an active Helm repair exists but this plan is not a recorded stack" >&2
+      exit 1
+    }
+  fi
 
   local record_namespace record_release
   record_namespace="$(jq -er '.target.namespace' "${BUNDLE_DIR}/repair-record.json")"
@@ -454,9 +530,7 @@ apply_repair() {
     "${args[@]}" \
     --atomic \
     --timeout "$TIMEOUT"
-  kubectl --namespace "$NAMESPACE" rollout status deployment \
-    --selector "app.kubernetes.io/instance=${CONTROL_RELEASE}" \
-    --timeout "$TIMEOUT"
+  wait_for_release_deployments
   if [[ -n "$HEALTH_URL" ]]; then
     command -v curl >/dev/null || {
       echo "required command is unavailable: curl" >&2
@@ -536,9 +610,7 @@ close_repair() {
     echo "live control release is not the declared reconciled signed chart" >&2
     exit 1
   }
-  kubectl --namespace "$NAMESPACE" rollout status deployment \
-    --selector "app.kubernetes.io/instance=${CONTROL_RELEASE}" \
-    --timeout "$TIMEOUT"
+  wait_for_release_deployments
   if [[ -n "$HEALTH_URL" ]]; then
     curl --fail --silent --show-error --max-time 15 "$HEALTH_URL" >/dev/null
   fi

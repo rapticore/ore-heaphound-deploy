@@ -11,6 +11,12 @@ use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,
 DNS/ACM, and one-approval agent workflow, use
 [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+For the explicitly authorized `v0.1.0-develop.23.4` production upgrade, give
+the deployment agent
+[DEPLOYMENT_AGENT_V23_4.md](DEPLOYMENT_AGENT_V23_4.md) as the controlling
+execution directive. It prohibits a new pre-rollout snapshot, requires an
+agent-managed upgrade instead of automatic `apply`, authorizes bounded Helm
+repairs, and defines the mandatory reconciliation report.
 That runbook also defines the installation agent's governed Helm-repair lane:
 it may restore production with a visibly distinct, approval-bound control chart
 and must reconcile the source patch into the next signed release.
