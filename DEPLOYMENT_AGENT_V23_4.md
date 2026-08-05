@@ -7,6 +7,17 @@ control release with the immutable signed `v0.1.0-develop.23.4` release.
 The release manifest, not this document, is authoritative for source, image,
 chart, archive, signature, provenance, SBOM, detector, and model digests.
 
+Customer deployment trust begins at the signed public release. Protected-
+branch CI, source-tag ancestry, and source-repository branch protection are
+release-producer controls enforced before the release workflow can sign or
+publish artifacts. They are not customer deployment gates. Do not request or
+require access to the private `rapticore/ore_heaphound` source repository, call
+its GitHub APIs, inspect its branches or protection rules, or run a private-
+source `git ls-remote` check. GitHub returning `404` or `repository not found`
+for that private repository is expected for a public deployment identity and
+is not a release failure. Branch protection on the public deployment
+repository is also irrelevant to artifact trust.
+
 ## Required outcome
 
 - Keep the application available while advancing the database from migration
@@ -49,9 +60,16 @@ identity, age, and `refresh_dashboard_rollup` execution.
 
 ## Immutable preflight
 
-1. Resolve `v0.1.0-develop.23.4` from the public release metadata and require an
-   annotated signed tag whose commit is reachable from protected `develop`.
-2. Verify the release manifest and archive signatures/checksums, both immutable
+1. Resolve `v0.1.0-develop.23.4` from the public deployment repository's release
+   metadata. Require the exact public tag and release assets, and reject a
+   withdrawn release. The public tag locates the distribution kit; the signed
+   artifacts below are the trust root.
+2. Verify the release manifest and archive signatures/checksums against the
+   exact tagged `rapticore/ore_heaphound/.github/workflows/release.yml`
+   Sigstore identity. Require the signed manifest to bind the expected source
+   repository, 40-character source commit, release version, and workflow run.
+   Do not independently query the private source repository to re-prove those
+   release-producer facts. Verify both immutable
    application images, all three OCI charts, chart package checksums,
    per-platform provenance and SPDX attestations, detector manifest, model
    lock, prerequisites, capabilities, withdrawal metadata, and exact tagged
@@ -68,6 +86,19 @@ identity, age, and `refresh_dashboard_rollup` execution.
 5. Produce a fresh Terraform 1.15.8 saved plan. It must contain zero changes;
    do not apply it.
 6. Do not create or wait for a new snapshot.
+
+Completed immutable-artifact, render, and Terraform checks may be reused when
+they are retained in the same durable deployment evidence directory, bind the
+exact hashes above, and no artifact, configuration, Terraform state, or target
+has changed. A stop caused only by attempted private-source access does not
+invalidate those checks. Immediately before production mutation, refresh only
+the drift-sensitive observations: withdrawal status, cloud/Kubernetes
+identity, live Helm revisions and repair marker, migration ledger and database
+locks, active scans and leases, pod readiness, RDS availability, and whether
+the retained zero-change Terraform plan still matches the current state and
+configuration. Do not repeat image builds, downloads, provenance/SBOM checks,
+or other expensive immutable preparation solely because the private source
+repository was inaccessible.
 
 ## Render and upgrade trap
 

@@ -7,7 +7,7 @@ policy:
   allowedThirdPartyImages:
     - ollama/ollama@sha256:57f573b47f1f71ebb445789f279fe3e596a8beab182f7cf486db9205bad87c5a
     - ghcr.io/data-privacy-stack/presidio-analyzer@sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9
-  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.23.4
+  signerSubject: https://github.com/rapticore/ore_heaphound/.github/workflows/release.yml@refs/tags/v0.1.0-develop.23.5
   # The automatic reconciler supplies exactly the currently running release
   # identity here during an upgrade so --atomic can roll back safely.
   signerSubjects: []
