@@ -10,7 +10,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:fe47680234b0c0a1a0ca4a3cbec49247cabdb7dba2765844a6a2e90a1bb39363
+  digest: sha256:b418f79238c733437c218f9001a8fee146e217255ce414d34752277ae2966718
 
 extraction:
   enabled: true
@@ -26,12 +26,17 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:238f5bd3bbaa5f555fe8b5d9fbf5e573b9b086b54ba65d722e16d8ecdd98ea87
+    digest: sha256:7a2fd21436d5f1fd38c91de4d1980615912cbb0b17c5136c65d070f9971172c6
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
 
 database:
+  migrationJob:
+    # Covers an External Secrets refresh if RDS rotation races the Helm hook.
+    backoffLimit: 8
+    credentialMode: components
+    databaseName: sddp
   runtimeRole: sddp_runtime
   webRole: sddp_web
   verificationRole: sddp_verification_preview
@@ -82,7 +87,7 @@ scanWorkers:
   sharding:
     enabled: true
   rulesetVersion: native:builtin-v7|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:9f80845bd68f309cac3a19740bd1750ae760278fbbd1499c7c1942772644b9a9
+  detectorManifestDigest: sha256:4f0d18695839deafd80dd76e3b7953c9d2312451253d179d7c7d8dec6c670005
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct

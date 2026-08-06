@@ -71,7 +71,7 @@
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "09157e1138b84788e4e5e703ad74b2cb6f6179154e895b5bb0de621591bd334c"
+          "sha256": "fe5045bee6ddc2a7728a08bc9966ccdd68477ef7dbbc78453c10a93c6872eca6"
         },
         {
           "path": "internal/avrosafe/decoder.go",
@@ -83,7 +83,7 @@
         },
         {
           "path": "internal/extraction/archive.go",
-          "sha256": "080752cd7ebc1c3a8e78cf2c17c95e0396fde4c48cf78d9d8a1a712f16e11fd5"
+          "sha256": "65932f16e3de785235afd54967bde67dcc33d7e2a736b5e12aa626d0a95f88be"
         },
         {
           "path": "internal/extraction/chunk.go",
@@ -107,7 +107,7 @@
         },
         {
           "path": "internal/extraction/tika.go",
-          "sha256": "320d330f772948811d6f5c5e96daff6d2418b5e217a5284d1168943741fb32e1"
+          "sha256": "c3946f70c78c2d114530d761383e82c817da3b0c6e33f667f0e096085fa7bd86"
         },
         {
           "path": "internal/pdfnative/pdfnative.go",
@@ -127,7 +127,7 @@
         },
         {
           "path": "internal/scanner/handler.go",
-          "sha256": "87aa6128cb99c8e52e06bccd1460df5f1e7f4adf720ba31d4d7e5f1f170a8cf7"
+          "sha256": "bbc0a1ceeda7304971002db0b0d4f09966e0fefe8451529dfc68611076cd79f5"
         },
         {
           "path": "internal/scanner/range_shards.go",
@@ -255,7 +255,7 @@
         },
         {
           "path": "internal/detection/presidio/presidio.go",
-          "sha256": "27f8f9647bb615a682c27f8579072ef631c8fc025ef3216fcfd7fe414eaa49ba"
+          "sha256": "2d9f7853e3ab59cbe087d0a396b2e291228fd4143e20b54e1e865fba2c425d4d"
         }
       ],
       "limitations": [
@@ -285,7 +285,7 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "b1cee770f2e550f804f13f430789d3c451c73f9142857622557eace3eddf6db3"
+          "sha256": "cf1053a8a161164d7a179a907a2257168aeec39284e67f097b2b516c92272287"
         }
       ],
       "limitations": [

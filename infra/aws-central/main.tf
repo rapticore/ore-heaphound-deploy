@@ -772,6 +772,20 @@ data "aws_iam_policy_document" "external_secrets" {
     resources = [data.aws_secretsmanager_secret.operator.arn]
   }
 
+  # The migration hook consumes the RDS-managed credential directly through
+  # External Secrets. RDS may rotate this version independently at any time;
+  # copying it into the operator secret created a second, stale credential and
+  # blocked the next signed migration job with SQLSTATE 28P01.
+  statement {
+    sid = "ReadExactRDSMasterSecret"
+    actions = [
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:ListSecretVersionIds",
+    ]
+    resources = [aws_db_instance.postgres.master_user_secret[0].secret_arn]
+  }
+
   statement {
     sid       = "DecryptExactOperatorSecret"
     actions   = ["kms:Decrypt"]
@@ -856,7 +870,10 @@ resource "kubectl_manifest" "operator_external_secret" {
       namespace = var.namespace
     }
     spec = {
-      refreshInterval = "1h"
+      # Keep the Kubernetes projection close to AWSCURRENT. The production
+      # migration Job retries for longer than this interval, so a rotation that
+      # races a Helm hook self-recovers with a newly created pod and fresh env.
+      refreshInterval = "1m"
       secretStoreRef = {
         kind = "SecretStore"
         name = "ore-heaphound-operator"
@@ -865,12 +882,40 @@ resource "kubectl_manifest" "operator_external_secret" {
         name           = var.operator_kubernetes_secret_name
         creationPolicy = "Owner"
         deletionPolicy = "Retain"
+        # RDS owns and rotates only the credential. Endpoint and database name
+        # come from Terraform's exact DB resource, not assumptions about the
+        # managed secret's JSON shape. Merge retains every operator key fetched
+        # by dataFrom while adding these non-secret connection components.
+        template = {
+          engineVersion = "v2"
+          mergePolicy   = "Merge"
+          data = {
+            SDDP_MIGRATION_DATABASE_HOST = aws_db_instance.postgres.address
+            SDDP_MIGRATION_DATABASE_PORT = tostring(aws_db_instance.postgres.port)
+          }
+        }
       }
       dataFrom = [{
         extract = {
           key = local.operator_secret_name
         }
       }]
+      data = [
+        {
+          secretKey = "SDDP_MIGRATION_DATABASE_USERNAME"
+          remoteRef = {
+            key      = aws_db_instance.postgres.master_user_secret[0].secret_arn
+            property = "username"
+          }
+        },
+        {
+          secretKey = "SDDP_MIGRATION_DATABASE_PASSWORD"
+          remoteRef = {
+            key      = aws_db_instance.postgres.master_user_secret[0].secret_arn
+            property = "password"
+          }
+        },
+      ]
     }
   })
 

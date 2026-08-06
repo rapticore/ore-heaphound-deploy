@@ -335,8 +335,13 @@ model weights.
 
 The synchronized `sddp-production-operator-secrets` contains at least:
 
-- `SDDP_MIGRATION_DATABASE_URL`, `SDDP_DATABASE_URL`, and
-  `SDDP_WEB_DATABASE_URL`, using TLS verification;
+- `SDDP_DATABASE_URL` and `SDDP_WEB_DATABASE_URL`, using TLS verification;
+- on AWS central, `SDDP_MIGRATION_DATABASE_HOST`,
+  `SDDP_MIGRATION_DATABASE_PORT`, `SDDP_MIGRATION_DATABASE_USERNAME`, and
+  `SDDP_MIGRATION_DATABASE_PASSWORD`; External Secrets merges the Terraform
+  endpoint with the current RDS-managed credential so rotation cannot stale an
+  independently copied migration URL;
+- for generic/self-hosted URL mode, `SDDP_MIGRATION_DATABASE_URL` instead;
 - `SDDP_VERIFICATION_DATABASE_URL` and
   `SDDP_VERIFICATION_ROLE_PASSWORD` for the dedicated source-read preview
   workload;
