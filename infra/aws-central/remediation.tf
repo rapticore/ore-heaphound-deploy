@@ -309,6 +309,21 @@ resource "aws_s3_bucket_policy" "redacted" {
 data "aws_iam_policy_document" "remediation_executor" {
   count = local.remediation_enabled ? 1 : 0
 
+  # HeadObject deliberately returns 403 rather than 404 for an absent key when
+  # the caller lacks ListBucket. Redact-and-quarantine verification must be
+  # able to distinguish "the approved source is gone" from "the executor lost
+  # source access" after a successful conditional delete. Scope this bucket-
+  # level permission to the exact source buckets admitted by the deployment;
+  # the executor does not call ListObjects during remediation.
+  dynamic "statement" {
+    for_each = length(var.source_bucket_arns) > 0 ? [1] : []
+    content {
+      sid       = "VerifyRemovedSourceObjects"
+      actions   = ["s3:ListBucket"]
+      resources = var.source_bucket_arns
+    }
+  }
+
   statement {
     sid = "WriteQuarantineCopies"
     actions = [

@@ -123,7 +123,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "70e4283493df028af3442d4997fe33c99740941267bb2833a60aacd33093e63a"
+          "sha256": "5ac596aff0dc685be1ed345602275f704ab322e6c4371dad0c105d8a83499412"
         },
         {
           "path": "internal/scanner/handler.go",
@@ -139,7 +139,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "9c739d32e754dc2294e8fa5d6e68537947fcc7f4e8341b785a629cd585ae776d"
+          "sha256": "ba5546d2b0df0488b30556fa34e086f5915efb93d139e8ced20870dfeab6d44a"
         }
       ]
     },

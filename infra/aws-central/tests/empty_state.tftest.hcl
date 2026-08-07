@@ -335,6 +335,14 @@ run "remediation_enabled_plan" {
     condition = (
       toset(one([
         for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "VerifyRemovedSourceObjects"
+      ]).actions) == toset(["s3:ListBucket"]) &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "VerifyRemovedSourceObjects"
+      ]).resources) == toset(["arn:aws:s3:::partner-source"]) &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
         statement if statement.sid == "MutateApprovedSourceObjectsUnderApproval"
         ]).actions) == toset([
         "s3:DeleteObject",
@@ -346,7 +354,7 @@ run "remediation_enabled_plan" {
         statement if statement.sid == "PurgeExpiredQuarantineVersions"
       ]).actions, "s3:DeleteObjectVersion")
     )
-    error_message = "Source mutation must preserve tags and must never gain permanent version deletion; exact version deletion belongs to quarantine."
+    error_message = "Source absence verification must be bucket-scoped; source mutation must preserve tags and never gain permanent version deletion."
   }
 
   assert {

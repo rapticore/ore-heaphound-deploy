@@ -95,8 +95,10 @@ the bucket default.
 
 The executor policy is the only place in the deployment that grants
 `s3:DeleteObject` or `s3:PutObject` on a source object, and it is scoped to the
-exact `source_bucket_arns`. The control-plane and scan-worker policies are
-unchanged and remain read-only.
+exact `source_bucket_arns`. It also grants `s3:ListBucket` on only those bucket
+ARNs so a post-delete `HeadObject` can distinguish an absent source (`404`)
+from lost source authorization (`403`); remediation never calls `ListObjects`.
+The control-plane and scan-worker policies are unchanged and remain read-only.
 
 Take these four outputs forward:
 
