@@ -27,14 +27,15 @@ system_node_desired_size = 3
 system_node_max_size     = 6
 
 # Scan nodes remain diversified by default. A reviewed high-throughput
-# production overlay can prefer a current general-purpose family and reject small
-# nodes without patching the live Karpenter NodePool:
+# production overlay can prefer several compatible general-purpose families and
+# sizes without patching the live Karpenter NodePool:
 #
-# scan_instance_families       = ["m8a"]
-# scan_min_instance_generation = 8
+# scan_instance_families       = ["m8a", "m7a", "m6a"]
+# scan_min_instance_generation = 6
 # scan_min_instance_vcpu       = 16
-# scan_instance_vcpus          = [16]
-# Together, the exact family and vCPU values resolve to m8a.4xlarge.
+# scan_instance_vcpus          = [8, 16, 32]
+# This keeps the reviewed AMD memory/CPU shape while giving Spot multiple
+# generations and sizes in each availability zone.
 #
 # Keep Spot as the primary capacity type. Exact-family constraints reduce the
 # available Spot capacity pool, so validate the selected family in every

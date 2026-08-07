@@ -1,5 +1,9 @@
 production:
   enabled: true
+  # Keep two inference replicas warm: one on the managed GPU baseline and one
+  # on the elastic LLM pool. Scan workers fail closed when contextual detection
+  # is enabled, so this removes the single-pod startup dependency.
+  ollamaBaselineReplicas: 2
 
 networkPolicy:
   enabled: true
@@ -10,7 +14,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:b418f79238c733437c218f9001a8fee146e217255ce414d34752277ae2966718
+  digest: sha256:876a3935bb7057b06d86d7e3881173aea05dd20f58d43ee048bf6485a13daf5b
 
 extraction:
   enabled: true
@@ -26,7 +30,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:7a2fd21436d5f1fd38c91de4d1980615912cbb0b17c5136c65d070f9971172c6
+    digest: sha256:17aae0f0ece959adc8ac2ab18db1cc33373458bd046df89d94f73f28d679d760
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -86,13 +90,13 @@ web:
 scanWorkers:
   sharding:
     enabled: true
-  rulesetVersion: native:builtin-v7|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:4f0d18695839deafd80dd76e3b7953c9d2312451253d179d7c7d8dec6c670005
+  rulesetVersion: native:builtin-v7|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  detectorManifestDigest: sha256:762e5797c4eb7d86cfc606f1b43fab4b2625a873a755fd21b047715937a0a147
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct
     modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-    version: qwen2.5:7b-instruct|phi-span-prompt:v3|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+    version: qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
   presidioEngine:
     enabled: true
     local: true
@@ -150,9 +154,12 @@ localModels:
     enabled: true
     models: [qwen2.5:7b-instruct]
     modelPull: { enabled: false }
+    # Two inference slots on each of two pods preserve four-way concurrency
+    # without concentrating every prompt cache on one GPU pod.
+    numParallel: 2
     autoscaling:
       enabled: true
-      minReplicas: 1
+      minReplicas: 2
       maxReplicas: 8
     persistence:
       enabled: true
@@ -175,8 +182,9 @@ localModels:
               matchExpressions:
                 - key: rapticore.io/capacity
                   operator: In
-                  # Keep one stable model endpoint on the fixed managed GPU
-                  # baseline. Replicas 2+ consume the Spot-only llm NodePool.
+                  # Keep a stable endpoint on the fixed managed GPU baseline.
+                  # The second baseline replica and later elastic replicas can
+                  # consume the Spot-only llm NodePool.
                   values: [on-demand]
 
 resilience:

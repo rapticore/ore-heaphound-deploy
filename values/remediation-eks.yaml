@@ -9,12 +9,10 @@ serviceAccount:
       # Terraform output: remediation_executor_role_arn.
       eks.amazonaws.com/role-arn: REPLACE_REMEDIATION_EXECUTOR_ROLE_ARN
 
-# The remediation executor validates its required local model during startup.
-# Keep one managed Ollama pod ready even when scan-queue triggers are idle.
-localModels:
-  ollama:
-    autoscaling:
-      minReplicas: 1
+# This overlay deliberately does not lower the central deployment's Ollama
+# baseline. Deterministic and Presidio redaction do not depend on Ollama, while
+# contextual scan detection and explicitly selected guarded-AI validation use
+# the production baseline configured by central-eks.yaml.
 
 # Nothing here can act on its own: every change is request -> dry run ->
 # independent approval(s) bound to the dry-run digest -> execution-time
@@ -34,6 +32,10 @@ remediation:
     region: REPLACE_AWS_REGION
   redaction:
     enabled: true
+    # The UI defaults to Presidio operator agreement. Deterministic remains an
+    # always-available baseline; AI adds a local fail-closed residual review
+    # only when explicitly selected for a request.
+    engines: [deterministic_v1, presidio_v1, ai_guarded_v1]
     provider: s3
     # Redacted copies. Terraform output: redacted_bucket.
     redactedBucket: REPLACE_REDACTED_BUCKET
@@ -43,11 +45,13 @@ remediation:
     # controls (account/region, encryption, retention, residency). Change it
     # whenever those controls change; it is bound into every approval.
     destinationPolicyId: REPLACE_DESTINATION_POLICY_ID
-    # Fail-closed: the pinned local model inspects every ephemeral redacted
-    # output and blocks the write if any residual identifier remains.
+    presidioAnonymizer:
+      enabled: true
+      replicas: 2
     llmValidation:
       enabled: true
+      provider: ollama
       model: qwen2.5:7b-instruct
       modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-      version: REPLACE_REDACTION_VALIDATOR_VERSION
-      dataPolicyId: REPLACE_LOCAL_PROCESSING_POLICY_ID
+      version: qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e|redaction-validator:v4
+      dataPolicyId: private-local-redaction-validation-v1

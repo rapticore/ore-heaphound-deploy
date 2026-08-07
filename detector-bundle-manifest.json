@@ -7,7 +7,7 @@
       "id": "contextual_model",
       "kind": "contextual_model",
       "enabled": true,
-      "version": "qwen2.5:7b-instruct|phi-span-prompt:v3",
+      "version": "qwen2.5:7b-instruct|phi-span-prompt:v4",
       "runtime": "source-local-ollama-0.32.0",
       "source": "https://ollama.com/library/qwen2.5",
       "license": {
@@ -29,15 +29,15 @@
         },
         {
           "path": "internal/detection/llm/llm.go",
-          "sha256": "a3abd39d7a8e8f11410692df448256ba7aa13d3b7a46ec8809fc76707df32b89"
+          "sha256": "4d1b543eca95b530b7c44de41725371cba09ba514634d4bd9d5109d06f179c30"
         },
         {
           "path": "internal/detection/locate.go",
-          "sha256": "358e31c5d2452a6128c0d3ef47c35c10f3340d0358181a0bdbfc1658b0184ecf"
+          "sha256": "5f8e21eaf8f01d0245c81f67c8126cb4bf3dbd8b49555e7aa4f00785ec8c4cca"
         },
         {
           "path": "internal/modelconfig/config.go",
-          "sha256": "3e50319870e819c9e43916e8f88f4f2cc9743b8a9bbd98995e669e0dd843df43"
+          "sha256": "67965be9adb921d50e50db385ec445ce3a6b4278a4db87020bc4780114150281"
         }
       ],
       "limitations": [
@@ -49,7 +49,7 @@
       "id": "extraction_runtime",
       "kind": "extraction_runtime",
       "enabled": true,
-      "version": "pdfium-wasm-v1|ooxml-v1|tika-4.0.0-beta-1-full|ocr:eng",
+      "version": "pdfium-wasm-v1|ooxml-v2|tika-4.0.0-beta-1-full|ocr:eng",
       "runtime": "isolated-extraction-image",
       "source": "https://hub.docker.com/r/apache/tika",
       "license": {
@@ -71,7 +71,7 @@
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "fe5045bee6ddc2a7728a08bc9966ccdd68477ef7dbbc78453c10a93c6872eca6"
+          "sha256": "75d1249500a23180fa9a14ff22b5e510d21ea7460258b81a9a423688a6ffb939"
         },
         {
           "path": "internal/avrosafe/decoder.go",
@@ -95,7 +95,7 @@
         },
         {
           "path": "internal/extraction/ooxml.go",
-          "sha256": "239b280e1b7cb8a5a0ef3d447c2d23a73f3030c7908070ab7886c55717728083"
+          "sha256": "8e67a2068fc30199c1c81bcd5ad0179a4486688364d9c7e636d779c3df0d7dc4"
         },
         {
           "path": "internal/extraction/pdf.go",
@@ -107,7 +107,7 @@
         },
         {
           "path": "internal/extraction/tika.go",
-          "sha256": "c3946f70c78c2d114530d761383e82c817da3b0c6e33f667f0e096085fa7bd86"
+          "sha256": "34ae30898950230b43bce3ebf2741ad59cda417df8d9f82dbb279224166e0a99"
         },
         {
           "path": "internal/pdfnative/pdfnative.go",
@@ -127,7 +127,7 @@
         },
         {
           "path": "internal/scanner/handler.go",
-          "sha256": "bbc0a1ceeda7304971002db0b0d4f09966e0fefe8451529dfc68611076cd79f5"
+          "sha256": "77fd36e31a0dfb1235bc4be17a40afad7dba5a09b1450798257382df96d46bcd"
         },
         {
           "path": "internal/scanner/range_shards.go",
@@ -139,7 +139,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "6184582ee84b547a85b67f9c04dd6ff94aaad30601204a09c5beafac01d7e917"
+          "sha256": "9c739d32e754dc2294e8fa5d6e68537947fcc7f4e8341b785a629cd585ae776d"
         }
       ]
     },
@@ -174,7 +174,7 @@
         },
         {
           "path": "internal/detection/locate.go",
-          "sha256": "358e31c5d2452a6128c0d3ef47c35c10f3340d0358181a0bdbfc1658b0184ecf"
+          "sha256": "5f8e21eaf8f01d0245c81f67c8126cb4bf3dbd8b49555e7aa4f00785ec8c4cca"
         },
         {
           "path": "internal/secrets/kingfisher.go",
@@ -251,7 +251,7 @@
       "inputs": [
         {
           "path": "deploy/helm/sddp/templates/presidio.yaml",
-          "sha256": "029d3ea2aa664c2d92c06afbe860fa01b8479f4aabe162409dcae933fc5cddc8"
+          "sha256": "1977cb288fceec93f28163cfe705399e5bb0b0f28dedd8bf3021400615092b11"
         },
         {
           "path": "internal/detection/presidio/presidio.go",
@@ -285,7 +285,7 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "cf1053a8a161164d7a179a907a2257168aeec39284e67f097b2b516c92272287"
+          "sha256": "f4d720312ff44be4ba2fb7947ce2c4107d6a1621aab8d3abdd56c47cec0c97a7"
         }
       ],
       "limitations": [
