@@ -304,6 +304,34 @@ data "aws_iam_policy_document" "control_plane" {
       resources = var.source_bucket_arns
     }
   }
+
+  # Automatic residual verification discovers only the create-only redacted
+  # outputs. Keep that inventory grant separate from ordinary source buckets so
+  # the remediation destination never becomes an implicitly approved source,
+  # and constrain ListObjects to the server-owned output namespace.
+  dynamic "statement" {
+    for_each = local.remediation_enabled ? [1] : []
+    content {
+      sid       = "DiscoverRedactedOutputBucketRegion"
+      actions   = ["s3:GetBucketLocation"]
+      resources = [aws_s3_bucket.redacted[0].arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.remediation_enabled ? [1] : []
+    content {
+      sid       = "InventoryRedactedOutputsForResidualVerification"
+      actions   = ["s3:ListBucket"]
+      resources = [aws_s3_bucket.redacted[0].arn]
+
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values   = ["redacted/*"]
+      }
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "control_plane" {
@@ -331,6 +359,8 @@ data "aws_iam_policy_document" "scan_worker" {
         "s3:GetObjectAttributes",
         "s3:GetObjectTagging",
         "s3:GetObjectVersion",
+        "s3:GetObjectVersionAttributes",
+        "s3:GetObjectVersionTagging",
       ]
       resources = [for arn in var.source_bucket_arns : "${arn}/*"]
     }
@@ -344,10 +374,49 @@ data "aws_iam_policy_document" "scan_worker" {
       resources = var.source_kms_key_arns
     }
   }
+
+  # Redacted outputs are a separate, server-owned read scope. Scan workers need
+  # it for independent residual scans and verification-preview deliberately
+  # consumes this same document so an authorized no-store preview can re-read
+  # the exact object version that produced a residual finding. Neither identity
+  # receives ListBucket, write/delete access, or access to quarantine snapshots.
+  dynamic "statement" {
+    for_each = local.remediation_enabled ? [1] : []
+    content {
+      sid       = "DiscoverRedactedOutputBucketRegion"
+      actions   = ["s3:GetBucketLocation"]
+      resources = [aws_s3_bucket.redacted[0].arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.remediation_enabled ? [1] : []
+    content {
+      sid = "ReadVersionedRedactedOutputs"
+      actions = [
+        "s3:GetObject",
+        "s3:GetObjectAttributes",
+        "s3:GetObjectTagging",
+        "s3:GetObjectVersion",
+        "s3:GetObjectVersionAttributes",
+        "s3:GetObjectVersionTagging",
+      ]
+      resources = ["${aws_s3_bucket.redacted[0].arn}/redacted/*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.remediation_enabled ? [1] : []
+    content {
+      sid       = "DecryptRedactedOutputs"
+      actions   = ["kms:Decrypt"]
+      resources = [aws_kms_key.data.arn]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "scan_worker" {
-  count = length(var.source_bucket_arns) > 0 ? 1 : 0
+  count = length(var.source_bucket_arns) > 0 || local.remediation_enabled ? 1 : 0
 
   name   = "least-privilege-source-reader"
   role   = aws_iam_role.workload["scan_worker"].id
@@ -355,7 +424,7 @@ resource "aws_iam_role_policy" "scan_worker" {
 }
 
 resource "aws_iam_role_policy" "verification_preview" {
-  count = length(var.source_bucket_arns) > 0 ? 1 : 0
+  count = length(var.source_bucket_arns) > 0 || local.remediation_enabled ? 1 : 0
 
   name   = "least-privilege-verification-source-reader"
   role   = aws_iam_role.workload["verification_preview"].id
@@ -936,12 +1005,10 @@ resource "aws_security_group" "database" {
     security_groups = [module.eks.node_security_group_id]
   }
 
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # PostgreSQL responses are covered by the security group's stateful ingress
+  # tracking. This RDS instance does not initiate connections into the VPC or
+  # internet, so keep its outbound rule set explicitly empty.
+  egress = []
 }
 
 data "aws_iam_policy_document" "rds_monitoring_assume" {

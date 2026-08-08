@@ -126,8 +126,12 @@
           "sha256": "5ac596aff0dc685be1ed345602275f704ab322e6c4371dad0c105d8a83499412"
         },
         {
+          "path": "internal/redaction/redaction.go",
+          "sha256": "56bb818a358d8398eba9897ec62741f880b9c1d9d912568867d964633cea5723"
+        },
+        {
           "path": "internal/scanner/handler.go",
-          "sha256": "77fd36e31a0dfb1235bc4be17a40afad7dba5a09b1450798257382df96d46bcd"
+          "sha256": "f85e962289d03dab6bdfa041f6171eb965f1c85f3f9e083e1af11c2f39c6b8f6"
         },
         {
           "path": "internal/scanner/range_shards.go",
@@ -190,7 +194,7 @@
       "id": "native",
       "kind": "native_rules",
       "enabled": true,
-      "version": "builtin-v7",
+      "version": "builtin-v8",
       "runtime": "application-image-in-process",
       "source": "repository://internal/detection",
       "license": {
@@ -205,7 +209,7 @@
         },
         {
           "path": "internal/detection/detection.go",
-          "sha256": "b73012d5c74b613ed81d701c89e476c2403a5b725ae02be3477aadbdd82f89a8"
+          "sha256": "8e57ced875581c074f3bdb13c07cd41a1c848a4fd059b69c3ea6549ea93f312b"
         },
         {
           "path": "internal/detection/identifiers.go",
@@ -281,11 +285,11 @@
         },
         {
           "path": "internal/redaction/profile.go",
-          "sha256": "a29ab8b8a2ec007393dae41e152972b58ebe662f7023b098a5bfe1eaef576a24"
+          "sha256": "3363f85f2c830c04eb5b0052c3925f00c2ff4a2f09cd6db9ed811b5a63ddb2b4"
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "f4d720312ff44be4ba2fb7947ce2c4107d6a1621aab8d3abdd56c47cec0c97a7"
+          "sha256": "673d6616215e4430a082170ad4a508b0d542db206a1654e1b07791b58415bbe0"
         }
       ],
       "limitations": [

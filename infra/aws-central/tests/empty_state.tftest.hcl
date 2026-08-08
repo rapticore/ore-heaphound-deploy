@@ -113,6 +113,21 @@ run "empty_state_plan" {
   }
 
   assert {
+    condition = (
+      aws_db_instance.postgres.publicly_accessible == false &&
+      length(aws_security_group.database.egress) == 0 &&
+      length(aws_security_group.database.ingress) == 1 &&
+      one(aws_security_group.database.ingress).protocol == "tcp" &&
+      one(aws_security_group.database.ingress).from_port == 5432 &&
+      one(aws_security_group.database.ingress).to_port == 5432 &&
+      length(coalesce(one(aws_security_group.database.ingress).cidr_blocks, toset([]))) == 0 &&
+      length(coalesce(one(aws_security_group.database.ingress).ipv6_cidr_blocks, toset([]))) == 0 &&
+      length(one(aws_security_group.database.ingress).security_groups) == 1
+    )
+    error_message = "RDS must remain private, admit PostgreSQL only from EKS nodes, and have no outbound rules."
+  }
+
+  assert {
     condition     = aws_db_instance.postgres.instance_class == "db.m8g.2xlarge"
     error_message = "New production installations must use the m8g database baseline unless an exact customer-approved class is pinned in private tfvars."
   }
@@ -317,7 +332,48 @@ run "remediation_enabled_plan" {
       aws_iam_role_policy.scan_worker[0].name == "least-privilege-source-reader" &&
       aws_iam_role_policy.verification_preview[0].name == "least-privilege-verification-source-reader"
     )
-    error_message = "Source-read authority must be attached independently to scan-worker and verification-preview identities."
+    error_message = "Source-read authority must be attached independently to scan-worker and verification-preview identities, using the same exact read policy."
+  }
+
+  assert {
+    condition = (
+      toset(one([
+        for statement in data.aws_iam_policy_document.control_plane.statement :
+        statement if statement.sid == "InventoryRedactedOutputsForResidualVerification"
+      ]).actions) == toset(["s3:ListBucket"]) &&
+      toset(one(
+        one([
+          for statement in data.aws_iam_policy_document.control_plane.statement :
+          statement if statement.sid == "InventoryRedactedOutputsForResidualVerification"
+        ]).condition
+      ).values) == toset(["redacted/*"]) &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.scan_worker.statement :
+        statement if statement.sid == "ReadVersionedRedactedOutputs"
+        ]).actions) == toset([
+        "s3:GetObject",
+        "s3:GetObjectAttributes",
+        "s3:GetObjectTagging",
+        "s3:GetObjectVersion",
+        "s3:GetObjectVersionAttributes",
+        "s3:GetObjectVersionTagging",
+      ]) &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.scan_worker.statement :
+        statement if statement.sid == "DecryptRedactedOutputs"
+      ]).actions) == toset(["kms:Decrypt"])
+    )
+    error_message = "Residual verification must inventory only redacted/* and give scan-worker plus verification-preview exact versioned-object/KMS read access."
+  }
+
+  assert {
+    condition = alltrue(flatten([
+      for statement in data.aws_iam_policy_document.scan_worker.statement : [
+        for action in statement.actions :
+        !startswith(action, "s3:Put") && !startswith(action, "s3:Delete") && action != "s3:ListBucket" && action != "kms:Encrypt" && action != "kms:GenerateDataKey"
+      ]
+    ]))
+    error_message = "The shared scan-worker/verification-preview policy must remain read-only and must not enumerate buckets."
   }
 
   assert {
@@ -326,9 +382,10 @@ run "remediation_enabled_plan" {
       aws_s3_bucket_versioning.redacted[0].versioning_configuration[0].status == "Enabled" &&
       aws_s3_bucket_lifecycle_configuration.quarantine[0].rule[0].expiration[0].days == 7 &&
       aws_s3_bucket_lifecycle_configuration.quarantine[0].rule[0].noncurrent_version_expiration[0].noncurrent_days == 1 &&
+      aws_s3_bucket_lifecycle_configuration.quarantine[0].rule[0].abort_incomplete_multipart_upload[0].days_after_initiation == 1 &&
       output.remediation_rollback_window == "168h"
     )
-    error_message = "Quarantine retention and the application rollback window must remain bound to the same deadline."
+    error_message = "Quarantine retention and the application rollback window must remain bound to the same deadline, and unfinished multipart copies must be cleaned up."
   }
 
   assert {
@@ -345,7 +402,17 @@ run "remediation_enabled_plan" {
         for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
         statement if statement.sid == "MutateApprovedSourceObjectsUnderApproval"
         ]).actions) == toset([
+        "s3:AbortMultipartUpload",
         "s3:DeleteObject",
+        "s3:PutObject",
+        "s3:PutObjectTagging",
+      ]) &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "WriteQuarantineCopies"
+        ]).actions) == toset([
+        "s3:AbortMultipartUpload",
+        "s3:GetObject",
         "s3:PutObject",
         "s3:PutObjectTagging",
       ]) &&
@@ -354,7 +421,7 @@ run "remediation_enabled_plan" {
         statement if statement.sid == "PurgeExpiredQuarantineVersions"
       ]).actions, "s3:DeleteObjectVersion")
     )
-    error_message = "Source absence verification must be bucket-scoped; source mutation must preserve tags and never gain permanent version deletion."
+    error_message = "Source absence verification must be bucket-scoped; large-object snapshot/restore must permit bounded multipart cleanup; source mutation must preserve tags and never gain permanent version deletion."
   }
 
   assert {

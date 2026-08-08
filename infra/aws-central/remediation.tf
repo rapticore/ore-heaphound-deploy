@@ -114,6 +114,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "quarantine" {
     noncurrent_version_expiration {
       noncurrent_days = 1
     }
+
+    # The executor aborts an unfinished multipart quarantine immediately, but
+    # process loss or a network partition can prevent that cleanup call. Bound
+    # orphaned encrypted parts independently so a failed large-object recovery
+    # cannot consume storage indefinitely.
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
   }
 
   depends_on = [aws_s3_bucket_versioning.quarantine]
@@ -327,6 +335,7 @@ data "aws_iam_policy_document" "remediation_executor" {
   statement {
     sid = "WriteQuarantineCopies"
     actions = [
+      "s3:AbortMultipartUpload",
       "s3:GetObject",
       "s3:PutObject",
       "s3:PutObjectTagging",
@@ -384,6 +393,7 @@ data "aws_iam_policy_document" "remediation_executor" {
     content {
       sid = "MutateApprovedSourceObjectsUnderApproval"
       actions = [
+        "s3:AbortMultipartUpload",
         "s3:DeleteObject",
         "s3:PutObject",
         "s3:PutObjectTagging",
