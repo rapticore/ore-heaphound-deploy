@@ -127,11 +127,11 @@
         },
         {
           "path": "internal/redaction/redaction.go",
-          "sha256": "56bb818a358d8398eba9897ec62741f880b9c1d9d912568867d964633cea5723"
+          "sha256": "0e82ef50e310389ff0ae1baa60fe6e6f3037fe03f8282961b388951fc821256f"
         },
         {
           "path": "internal/scanner/handler.go",
-          "sha256": "f85e962289d03dab6bdfa041f6171eb965f1c85f3f9e083e1af11c2f39c6b8f6"
+          "sha256": "2824d1eebab5ada98dd6e54a6fd4d713417ec3363998a998e09c8b96b73811ef"
         },
         {
           "path": "internal/scanner/range_shards.go",
@@ -194,7 +194,7 @@
       "id": "native",
       "kind": "native_rules",
       "enabled": true,
-      "version": "builtin-v8",
+      "version": "builtin-v9",
       "runtime": "application-image-in-process",
       "source": "repository://internal/detection",
       "license": {
@@ -204,12 +204,16 @@
       "egress": "none",
       "inputs": [
         {
+          "path": "internal/classification/classes.go",
+          "sha256": "27096d042ba6779b741b3fe54543d20a4665fd33ce50b2ed1bbdddd48a00fb52"
+        },
+        {
           "path": "internal/detection/cloud_secrets.go",
           "sha256": "6697a15c27b0530b5c2ada5ea3c63b6756255a6b0dcd91918c1afee80712dfe4"
         },
         {
           "path": "internal/detection/detection.go",
-          "sha256": "8e57ced875581c074f3bdb13c07cd41a1c848a4fd059b69c3ea6549ea93f312b"
+          "sha256": "f32cb6d22e0f3bf3db55dae3c3ccba07763c6f6ccceab72299ae6fc39f1684fd"
         },
         {
           "path": "internal/detection/identifiers.go",
@@ -218,6 +222,10 @@
         {
           "path": "internal/detection/network_ids.go",
           "sha256": "0c5836c4f40ff6d3e505532198611e686f06bc80e1120c4bb38f45fdec164498"
+        },
+        {
+          "path": "internal/detection/profile_identifiers.go",
+          "sha256": "7625da0aee0902cd44d1d28ea4edc5cd980c940cb327494d8627f5d58611ffc0"
         },
         {
           "path": "internal/detection/recognizers.go",
@@ -229,7 +237,7 @@
         },
         {
           "path": "internal/detection/taxonomy_recognizers.go",
-          "sha256": "dd1c284087919c5c2222d56761b91693fd102bfb07bf437c079706b203a383e6"
+          "sha256": "02c3f94d7134009913781659727da5d10fa2be6d55e4c0686c85225903b72aa9"
         }
       ]
     },
