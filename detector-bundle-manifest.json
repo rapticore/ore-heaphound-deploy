@@ -329,7 +329,7 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "fb2049a1d84bcaeb9e384f414d4ebf3954dd75bc717e6b8d55e971f915c1a88a"
+          "sha256": "27fd1761f5182c68caa5277598ab73521e49336077586a683c140d63119a7f05"
         }
       ],
       "limitations": [

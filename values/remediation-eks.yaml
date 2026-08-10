@@ -48,6 +48,10 @@ remediation:
     presidioAnonymizer:
       enabled: true
       replicas: 2
+      workers: 2
+      timeoutSeconds: 300
+      gracefulTimeoutSeconds: 300
+      requestTimeoutSeconds: 330
     llmValidation:
       enabled: true
       provider: ollama
