@@ -67,11 +67,19 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "86aafe23cae0a59989491e69f756691869256a8d8db947a9c4dd536687340aba"
+          "sha256": "8d91bf2ab57d66d02d15be9363a95add28b4b2f9298b71d6a8b512d6fd82dd36"
+        },
+        {
+          "path": "Dockerfile.tika",
+          "sha256": "1b5b827d94e1c7a5845b48df3bee68ac0d3a87dcabe51bd0ff4dcb590a139307"
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "75d1249500a23180fa9a14ff22b5e510d21ea7460258b81a9a423688a6ffb939"
+          "sha256": "45ca71e4ce8e5f8b28153e9c8fd0ea21bfc0122363884e8de2aa136214e202d8"
+        },
+        {
+          "path": "cmd/tika-runtime/main.go",
+          "sha256": "63c2e7b0d65c1e7e4189666eb915109dd6006d3d3f0ec7b5b2b447150bc5a1f0"
         },
         {
           "path": "internal/avrosafe/decoder.go",
@@ -107,7 +115,7 @@
         },
         {
           "path": "internal/extraction/tika.go",
-          "sha256": "34ae30898950230b43bce3ebf2741ad59cda417df8d9f82dbb279224166e0a99"
+          "sha256": "bb17032a255e7ca031624da8fb5a50216e01aa6acf059f6c86eb157710e99592"
         },
         {
           "path": "internal/pdfnative/pdfnative.go",
@@ -131,11 +139,35 @@
         },
         {
           "path": "internal/scanner/handler.go",
-          "sha256": "2824d1eebab5ada98dd6e54a6fd4d713417ec3363998a998e09c8b96b73811ef"
+          "sha256": "f6925fab71e809bf755392c4a94ac7f5642c5ae9f18102dd709d88a675ee5bc7"
         },
         {
           "path": "internal/scanner/range_shards.go",
           "sha256": "3345751b2f14471d1012d157a24b0ab58885b66938464adfcc702d9babcfe0b7"
+        },
+        {
+          "path": "internal/tikaguard/command.go",
+          "sha256": "5aaa6d035f8d43c8b0ae189254cadcd68ceb13c3fd68e236ef755c0f383ecc8a"
+        },
+        {
+          "path": "internal/tikaguard/config.go",
+          "sha256": "bba38bc16efec4cbd2c3aa32c4ca50d1558eb227f21be1bd2ed9e975cf130ee6"
+        },
+        {
+          "path": "internal/tikaguard/gateway.go",
+          "sha256": "d7c44f3d9a09b6871f6b232f932ef84b3eebaaf797d3d0110e6635f2e73f0e84"
+        },
+        {
+          "path": "internal/tikaguard/procattr_linux.go",
+          "sha256": "7b668c9438e5119cc21175ecdcf789aaa5258c3b53938339f58e50466c63b8ee"
+        },
+        {
+          "path": "internal/tikaguard/process_unix.go",
+          "sha256": "6e89f57c0606c6c1bcaef76f5a3342fb3a59e80277fe7cc4a5dfd992b788fb37"
+        },
+        {
+          "path": "internal/tikaguard/supervisor_linux.go",
+          "sha256": "cae6a64224219c53048e1bc3c8cafcb1fdb58ba6291cb3578ec807a5c93b20c2"
         },
         {
           "path": "internal/worker/presence.go",
@@ -143,7 +175,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "ba5546d2b0df0488b30556fa34e086f5915efb93d139e8ced20870dfeab6d44a"
+          "sha256": "ee442f8610b192400f29eb7f4c6f663670e21d0790b7d71304dbee964ca15cd4"
         }
       ]
     },
@@ -174,7 +206,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "86aafe23cae0a59989491e69f756691869256a8d8db947a9c4dd536687340aba"
+          "sha256": "8d91bf2ab57d66d02d15be9363a95add28b4b2f9298b71d6a8b512d6fd82dd36"
         },
         {
           "path": "internal/detection/locate.go",
@@ -297,7 +329,7 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "673d6616215e4430a082170ad4a508b0d542db206a1654e1b07791b58415bbe0"
+          "sha256": "fb2049a1d84bcaeb9e384f414d4ebf3954dd75bc717e6b8d55e971f915c1a88a"
         }
       ],
       "limitations": [
