@@ -14,12 +14,20 @@ serviceAccount:
 # contextual scan detection and explicitly selected guarded-AI validation use
 # the production baseline configured by central-eks.yaml.
 
-# Nothing here can act on its own: every change is request -> dry run ->
-# independent approval(s) bound to the dry-run digest -> execution-time
-# revalidation -> verification, and every source-changing action has a rollback
-# snapshot for rollbackWindow.
+# Nothing here can act on its own. Ordinary remediation is request -> rendered
+# dry run -> digest-bound approval -> revalidation -> execution -> verification
+# and retains its rollbackWindow snapshot. The high-throughput snapshot workflow
+# instead binds exact scanned versions, selected classes, the chosen engine,
+# per-item strategies, and removal fallbacks before two approvals; it renders only
+# after approval, conditionally mutates the attested staged prefix, and then
+# verifies a fresh exact inventory. It creates no extra dataset or rollback copy.
 remediation:
   enabled: true
+  # First-class staged-snapshot classification, in-place redaction, exclusion,
+  # and fresh verification. The chart keeps this opt-in; this production
+  # remediation overlay supplies every required write/scratch dependency below.
+  intelligenceGoals:
+    enabled: true
   # The scan Karpenter NodePool uses the deployment EC2NodeClass whose 100 GiB
   # gp3 root volume is encrypted. A 60 GiB request leaves capacity outside the
   # 50 GiB scratch volume for image layers, logs, and Kubernetes bookkeeping.
