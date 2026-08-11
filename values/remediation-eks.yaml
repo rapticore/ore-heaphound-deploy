@@ -20,6 +20,22 @@ serviceAccount:
 # snapshot for rollbackWindow.
 remediation:
   enabled: true
+  # The scan Karpenter NodePool uses the deployment EC2NodeClass whose 100 GiB
+  # gp3 root volume is encrypted. A 60 GiB request leaves capacity outside the
+  # 50 GiB scratch volume for image layers, logs, and Kubernetes bookkeeping.
+  nodeSelector:
+    rapticore.io/workload: scan
+    rapticore.io/scratch-capacity-policy: aws-central-karpenter-encrypted-root-v1
+  tolerations:
+    - key: rapticore.io/workload
+      operator: Equal
+      value: scan
+      effect: NoSchedule
+  resources:
+    requests:
+      ephemeral-storage: 60Gi
+    limits:
+      ephemeral-storage: 60Gi
   # Rollback snapshots. Terraform output: quarantine_bucket.
   quarantineBucket: REPLACE_QUARANTINE_BUCKET
   # Dedicated least-privilege database role; production refuses a shared role.
@@ -32,6 +48,9 @@ remediation:
     region: REPLACE_AWS_REGION
   redaction:
     enabled: true
+    scratch:
+      encrypted: true
+      capacityPolicyId: aws-central-karpenter-encrypted-root-v1
     # The UI defaults to Presidio operator agreement. Deterministic remains an
     # always-available baseline; AI adds a local fail-closed residual review
     # only when explicitly selected for a request.

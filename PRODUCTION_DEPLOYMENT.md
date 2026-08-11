@@ -84,7 +84,23 @@ exact reviewed packet. A changed plan or payload needs a new packet.
 
 After approval:
 
-1. apply the exact saved infrastructure plan;
+1. apply the exact saved infrastructure plan. If remediation redaction is
+   enabled, the infrastructure phase must complete before the control chart:
+   every Karpenter `NodePool` template with
+   `rapticore.io/workload=scan` must carry
+   `rapticore.io/scratch-capacity-policy=aws-central-karpenter-encrypted-root-v1`,
+   and its referenced `EC2NodeClass` must still provision an encrypted 100 GiB
+   root volume. Verify the live templates after the apply. Do not manually
+   label existing Nodes; that is neither durable nor evidence that replacement
+   capacity is qualified. Before Helm, schedule a bounded canary using an
+   already-admitted, digest-pinned application image with the same two node
+   selectors, scan toleration, and 60 GiB ephemeral-storage request as the
+   remediation executor. Require the canary's Node to become `Ready` with the
+   exact capacity-policy label, then remove the canary. If the saved plan
+   contains anything beyond the
+   reviewed NodePool-label update for this prerequisite, stop for a new
+   approval. The unattended reconciler intentionally stops on this Terraform
+   difference and must not run Helm first;
 2. run the Spot helper in `apply` mode with
    `ORE_HEAPHOUND_DEPLOYMENT_APPROVED=true`;
 3. populate the empty operator secret with the released non-echoing helper;

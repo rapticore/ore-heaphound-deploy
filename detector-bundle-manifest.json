@@ -75,7 +75,7 @@
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "45ca71e4ce8e5f8b28153e9c8fd0ea21bfc0122363884e8de2aa136214e202d8"
+          "sha256": "2af1a9a7aa7acf515c35728b6480152d5192e2008eba99534b13713ba9aef108"
         },
         {
           "path": "cmd/tika-runtime/main.go",
@@ -87,7 +87,7 @@
         },
         {
           "path": "internal/discovery/driver.go",
-          "sha256": "eb45bfa4e40121cddec2d7450dd56d2edfe4945a0b32bffdf4a27beac622a31a"
+          "sha256": "a7b7256de53592da6276404e5796ab96f42b16fb5b87eda74b0322f7bb82c788"
         },
         {
           "path": "internal/extraction/archive.go",
@@ -99,7 +99,7 @@
         },
         {
           "path": "internal/extraction/extract.go",
-          "sha256": "d2fbceb22db4ae7eceefeb2480e3d67be16ffa9a8592c62edd54b7a25ad656d3"
+          "sha256": "d65f05511cce6556133bf17573c9c333f2dad6d206fee8eec3466675d2574dff"
         },
         {
           "path": "internal/extraction/ooxml.go",
@@ -110,12 +110,16 @@
           "sha256": "8b77040056f5cfe9effd49b57dc92ec2c1c72346840d06a0c55d47d3fec9c9f8"
         },
         {
+          "path": "internal/extraction/stream.go",
+          "sha256": "cd9e3c5768b73952e95e117e5d5116f92d98e9623ac9a0e1bf77c14eeaa13866"
+        },
+        {
           "path": "internal/extraction/structured.go",
           "sha256": "b7fc3dfe96c20fc4df7823efdb5cec60de724e0f2286b204f1ae1c4b7f6dac0b"
         },
         {
           "path": "internal/extraction/tika.go",
-          "sha256": "bb17032a255e7ca031624da8fb5a50216e01aa6acf059f6c86eb157710e99592"
+          "sha256": "88308c681cadbc83b1d24da9d31b03349c8d70b0e26720b475445f3852085d96"
         },
         {
           "path": "internal/pdfnative/pdfnative.go",
@@ -131,19 +135,47 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "5ac596aff0dc685be1ed345602275f704ab322e6c4371dad0c105d8a83499412"
+          "sha256": "f61ef2f5c50a69bc85af2122b4c2d9e327b4e1ed40a437ffa5567b7219133f43"
         },
         {
           "path": "internal/redaction/redaction.go",
           "sha256": "0e82ef50e310389ff0ae1baa60fe6e6f3037fe03f8282961b388951fc821256f"
         },
         {
+          "path": "internal/remote/checkpoint.go",
+          "sha256": "758638643dabc8d94278aea60583b24338c01c60d12e0a4a39b5d00eaed32511"
+        },
+        {
+          "path": "internal/scanner/archive_member_fetcher.go",
+          "sha256": "9d01afc1a29e6cdb157e49392b93fa377e780c81a1a7aa8732ef126ae6f914e0"
+        },
+        {
           "path": "internal/scanner/handler.go",
-          "sha256": "f6925fab71e809bf755392c4a94ac7f5642c5ae9f18102dd709d88a675ee5bc7"
+          "sha256": "4526d3b957fb69d233148894216ae177466055a5b75a4592a6ca245edef7c285"
         },
         {
           "path": "internal/scanner/range_shards.go",
           "sha256": "3345751b2f14471d1012d157a24b0ab58885b66938464adfcc702d9babcfe0b7"
+        },
+        {
+          "path": "internal/scanner/router.go",
+          "sha256": "a74a2821f22ac16de4ebd36553185b177db8ffb22aaba527d61919214c5eb13d"
+        },
+        {
+          "path": "internal/scanner/s3_tar.go",
+          "sha256": "89bc5d7e4ea626b06fd701630579cf30b9c7e9eb638e52dc6ea9789d3db69c74"
+        },
+        {
+          "path": "internal/scanner/s3_zip.go",
+          "sha256": "62c1d8fd41b3b95a02d7b679c5e29214594c43047bd724f28cb983f1ff7315db"
+        },
+        {
+          "path": "internal/scanner/streaming.go",
+          "sha256": "a5963f5b59be1c8cf2abffe109bdd12202d6a41e7352c932fe4ca0f52e8a54c7"
+        },
+        {
+          "path": "internal/tarmember/locator.go",
+          "sha256": "863b3fc80aebe523379afe3100ba664cd1ac7ebc45d32f37f85bb15c4d3ecfd5"
         },
         {
           "path": "internal/tikaguard/command.go",
@@ -171,11 +203,15 @@
         },
         {
           "path": "internal/worker/presence.go",
-          "sha256": "479f812056aeb386cfe3743194150b7d346afd64e5912d8f2c3cbeaa1357650b"
+          "sha256": "f627011a0c9d62b3d4ab73915a288fa552e821dcc73ec93e26794be4c505f618"
         },
         {
           "path": "internal/worker/worker.go",
           "sha256": "ee442f8610b192400f29eb7f4c6f663670e21d0790b7d71304dbee964ca15cd4"
+        },
+        {
+          "path": "internal/zipmember/locator.go",
+          "sha256": "27ebb2003eaad309c8d8c74c8e9efe012b379166c7fd30732b598a7c1883b567"
         }
       ]
     },
@@ -226,7 +262,7 @@
       "id": "native",
       "kind": "native_rules",
       "enabled": true,
-      "version": "builtin-v9",
+      "version": "builtin-v11",
       "runtime": "application-image-in-process",
       "source": "repository://internal/detection",
       "license": {
@@ -245,31 +281,39 @@
         },
         {
           "path": "internal/detection/detection.go",
-          "sha256": "f32cb6d22e0f3bf3db55dae3c3ccba07763c6f6ccceab72299ae6fc39f1684fd"
+          "sha256": "1084a05c4f8d826880dd6fa9c1b80626d1a23bc6c6e7025bf8d7fafd4bf84265"
         },
         {
           "path": "internal/detection/identifiers.go",
-          "sha256": "0b36780438d93007378eb6dd384769de42d75f0a70efd1f276233606f6ef5aae"
+          "sha256": "7e4dedd7ada71839b6ade3d9f9faba0d05a818eb125cc238d2d4a42bd0c92505"
         },
         {
           "path": "internal/detection/network_ids.go",
-          "sha256": "0c5836c4f40ff6d3e505532198611e686f06bc80e1120c4bb38f45fdec164498"
+          "sha256": "23425cd7afb60fc2c2996f6b037bc4576a9114c21f0a8542aaf8ac9a7576ff67"
         },
         {
           "path": "internal/detection/profile_identifiers.go",
-          "sha256": "7625da0aee0902cd44d1d28ea4edc5cd980c940cb327494d8627f5d58611ffc0"
+          "sha256": "d5a59bcee4fcc433f4afd28d31d57692100e2455fbd37c63b1c9c1889d3ea74a"
         },
         {
           "path": "internal/detection/recognizers.go",
-          "sha256": "e4ddc16296225ee4d0195f57eabd9a58dcfaf2d86a4958c2508ab325de23ae15"
+          "sha256": "329c39994ab913292276df1fa0b396d6a684e2fb3cb237d889e80955279ffe04"
         },
         {
           "path": "internal/detection/secrets.go",
-          "sha256": "e0eca53fccd09c7fa5ee8229c46ad40c3af5f9a3e8560a750d439193f48f1083"
+          "sha256": "ebd04c9da620fa6a8c8a590979ded4dd60c5a3a59d1103a64ddb7fee0c584256"
         },
         {
           "path": "internal/detection/taxonomy_recognizers.go",
-          "sha256": "02c3f94d7134009913781659727da5d10fa2be6d55e4c0686c85225903b72aa9"
+          "sha256": "7298b1e009643496a4f8c799d17cb24c25b80f554b93495e8c34028226a734fa"
+        },
+        {
+          "path": "internal/quality/corpus.go",
+          "sha256": "18c34f5ec3293e87127502488181806eb27c12da0713d57abc024edff92bffdf"
+        },
+        {
+          "path": "internal/quality/quality_test.go",
+          "sha256": "54a0ae0fdbaac4a93e91fab2ed1c8bc776bc19efe10c45df05b46e66a33e28b2"
         }
       ]
     },
@@ -299,7 +343,7 @@
         },
         {
           "path": "internal/detection/presidio/presidio.go",
-          "sha256": "2d9f7853e3ab59cbe087d0a396b2e291228fd4143e20b54e1e865fba2c425d4d"
+          "sha256": "790ed3d0fa13da7ff777c6a9152b5e2d1c88e03ed4e77e34bb88366f1539321b"
         }
       ],
       "limitations": [
@@ -320,6 +364,10 @@
       "egress": "none",
       "inputs": [
         {
+          "path": "internal/archivemember/identity.go",
+          "sha256": "5c98a6fe0a0dc54cbbee1abe4f8ec4a26df49d71dc4f1bef4e9fa63ac6f2e60e"
+        },
+        {
           "path": "internal/redaction/llmvalidator/validator.go",
           "sha256": "61a51545f1d4346e8d23be86a9f80edd109ac962bd3b7a59428804e5d8218800"
         },
@@ -329,7 +377,15 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "27fd1761f5182c68caa5277598ab73521e49336077586a683c140d63119a7f05"
+          "sha256": "3382f99ba81e7c37849d269ee34125f9ea3c29783da87785cecec208416d03b1"
+        },
+        {
+          "path": "internal/remediation/s3_tar_redactor.go",
+          "sha256": "fac3840cb1b332461a244a3f243a6d80c8626934b9b0240d5cbbca88a947aab5"
+        },
+        {
+          "path": "internal/remediation/s3_zip_redactor.go",
+          "sha256": "c11749175dde93a3df3b3b6359c586066d636e1a5bd546e54f6e3af03a2ac3c6"
         }
       ],
       "limitations": [

@@ -681,6 +681,10 @@ resource "kubectl_manifest" "node_class" {
 }
 
 locals {
+  # Versioned contract consumed by the remediation Helm overlay. Scan NodePools
+  # carry this label only because their shared EC2NodeClass below provisions an
+  # encrypted 100 GiB root volume that can honestly back the 50 GiB emptyDir.
+  scratch_capacity_policy_id = "aws-central-karpenter-encrypted-root-v1"
   node_pools = merge({
     scan_spot = {
       workload   = "scan"
@@ -736,10 +740,12 @@ resource "kubectl_manifest" "node_pool" {
       weight = each.value.weight
       template = {
         metadata = {
-          labels = {
+          labels = merge({
             "rapticore.io/workload" = each.value.workload
             "rapticore.io/capacity" = each.value.capacity == "spot" ? "spot" : "on-demand"
-          }
+            }, each.value.workload == "scan" ? {
+            "rapticore.io/scratch-capacity-policy" = local.scratch_capacity_policy_id
+          } : {})
         }
         spec = {
           nodeClassRef = {

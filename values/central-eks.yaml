@@ -14,7 +14,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:9091d1cba5ed3b101bebdfcc9c7f12ff6fc78067495345d0db5b762a72e25688
+  digest: sha256:003538fca17a0b5698e7339d869e99f170c573bedca0a83ba0f6bfc1de2f6b2d
 
 extraction:
   enabled: true
@@ -30,7 +30,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:97b23b0b9c6990d4385165aff324fa8181b2ab13faaa875bec79ca6f2a3410fd
+    digest: sha256:cabc38987cadd3232133e95eefa08dc7effcd439f1b78ebfd87f3923f9c3d2c5
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -55,6 +55,9 @@ anchors:
 
 controlPlane:
   replicas: 3
+  databasePool:
+    maxConnections: 16
+    minConnections: 2
   rollout:
     maxUnavailable: 1
     maxSurge: 0
@@ -90,8 +93,16 @@ web:
 scanWorkers:
   sharding:
     enabled: true
-  rulesetVersion: native:builtin-v7|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:19c62fac6a17bd81ecee8c3a30268e410dee7ba512e3c282ddbd229f0b2fb547
+    # Split large newline-oriented exports before one lease owns minutes of
+    # work. v2 changes the immutable work identity; already-enqueued v1 work
+    # remains executable while new scans use 16-MiB independently retryable
+    # ranges with a bounded ownership overlap.
+    version: format-ranges-v2
+    thresholdBytes: 67108864
+    targetBytes: 16777216
+    overlapBytes: 262144
+  rulesetVersion: native:builtin-v11|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  detectorManifestDigest: sha256:96971a4e9ec74dacdb4dce7fc0940fdcbaf11ebdec7368ed8f28d16e8919bcbc
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct

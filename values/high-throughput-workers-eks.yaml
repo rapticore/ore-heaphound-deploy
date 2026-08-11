@@ -40,7 +40,7 @@ capacityAdvisor:
         requests: { cpu: "2", memory: "16Gi" }
         limits: { cpu: "8", memory: "32Gi" }
   catalog:
-    version: builtin-balanced-m8a-v4-tika40-presidio40
+    version: builtin-balanced-m8a-v5-stage-aware-tika40-presidio20
     profiles:
       - id: small
         stage: scan
@@ -81,7 +81,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 40
+        max_replicas: 20
       - id: qwen
         stage: contextual
         capacity_class: gpu
