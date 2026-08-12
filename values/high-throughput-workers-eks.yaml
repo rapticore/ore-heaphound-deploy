@@ -14,8 +14,10 @@ capacityAdvisor:
       concurrency: 4
       placements: []
       resources:
-        requests: { cpu: "100m", memory: "256Mi" }
-        limits: { cpu: "2", memory: "2Gi" }
+        # Qualified against the production OOM incident with concurrency kept
+        # at four: reserve 1 GiB and allow a bounded 4-GiB peak per worker.
+        requests: { cpu: "100m", memory: "1Gi" }
+        limits: { cpu: "2", memory: "4Gi" }
     - name: standard
       capacityClass: standard
       minReplicas: 8
@@ -40,7 +42,7 @@ capacityAdvisor:
         requests: { cpu: "2", memory: "16Gi" }
         limits: { cpu: "8", memory: "32Gi" }
   catalog:
-    version: builtin-balanced-m8a-v5-stage-aware-tika40-presidio20
+    version: builtin-balanced-m8a-v6-stage-aware-tika60-presidio50
     profiles:
       - id: small
         stage: scan
@@ -73,7 +75,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 2000
         hourly_cost_microusd: 220000
         min_replicas: 1
-        max_replicas: 40
+        max_replicas: 60
       - id: presidio
         stage: entity_recognition
         capacity_class: standard
@@ -81,7 +83,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 20
+        max_replicas: 50
       - id: qwen
         stage: contextual
         capacity_class: gpu
@@ -95,6 +97,11 @@ capacityAdvisor:
 # requests makes packing truthful; the extraction overlay carries the matching
 # Tika and Presidio stage ceilings and complete capacity catalog.
 presidio:
+  autoscaling:
+    # This overlay is rendered after the extraction overlay in the supported
+    # release path. Repeat the qualified floor so list/map replacement cannot
+    # silently restore the former twenty-replica bottleneck.
+    minReplicas: 50
   resources:
     # en_core_web_lg is roughly 800 MiB before request-serving overhead. The
     # prior 1280-MiB reservation left too little measured runtime headroom.

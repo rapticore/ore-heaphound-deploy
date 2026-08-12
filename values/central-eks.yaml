@@ -14,13 +14,15 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:2df32dff3beade4b521198a8e108f1795780d9c129c7bc2f2f45da3ab09a4c1f
+  digest: sha256:cddac933a86f39d12263b42df4c5e8d9049a90976f03db7f569e12e9127ef022
 
 extraction:
   enabled: true
   denyEgress: true
   autoscaling:
-    minReplicas: 2
+    # Mixed-content scans need the parser tier already warm; express this in
+    # signed values rather than relying on the current operational hold.
+    minReplicas: 60
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:
@@ -30,7 +32,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:1197216edb1a83a604906d281cc963fa01663ec8e071591399556ec535c57f46
+    digest: sha256:552348d406d8faa1830ec63cd5d315d27f0fb6fbaec4abf83c4fa2dde386fdd0
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -102,7 +104,7 @@ scanWorkers:
     targetBytes: 16777216
     overlapBytes: 262144
   rulesetVersion: native:builtin-v11|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:27d74fcf7d890ebbad5fe96773191a81650e7083262a64e310f3847d6d34b387
+  detectorManifestDigest: sha256:44a8ae86efe6dcaa44a15c26c758df36cf6b437aa9b62b31a2afc60cc28a511f
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct
@@ -141,6 +143,66 @@ scanWorkers:
 # spend cap. Calibrate the inherited catalog during staging qualification.
 capacityAdvisor:
   enabled: true
+  # The base chart carries the matching versioned presidio50 catalog. Keep the
+  # production ceiling explicit here so release reconciliation cannot inherit
+  # a future generic default.
+  stageMaxReplicas:
+    tika: 60
+    presidio: 50
+  # Carry the complete profile list in the signed production values. Helm
+  # replaces lists, and relying on generic chart defaults here previously let a
+  # later overlay restore the obsolete Presidio 20 ceiling.
+  catalog:
+    version: builtin-balanced-m8a-v6-stage-aware-tika60-presidio50
+    profiles:
+      - id: small
+        stage: scan
+        capacity_class: small
+        throughput_bytes_per_hour: 1073741824
+        throughput_objects_per_hour: 20000
+        hourly_cost_microusd: 120000
+        min_replicas: 0
+        max_replicas: 120
+      - id: standard
+        stage: scan
+        capacity_class: standard
+        throughput_bytes_per_hour: 2147483648
+        throughput_objects_per_hour: 5000
+        hourly_cost_microusd: 280000
+        min_replicas: 1
+        max_replicas: 8
+      - id: large
+        stage: scan
+        capacity_class: large
+        throughput_bytes_per_hour: 3221225472
+        throughput_objects_per_hour: 500
+        hourly_cost_microusd: 750000
+        min_replicas: 0
+        max_replicas: 20
+      - id: tika
+        stage: extraction
+        capacity_class: standard
+        throughput_bytes_per_hour: 8589934592
+        throughput_objects_per_hour: 2000
+        hourly_cost_microusd: 220000
+        min_replicas: 1
+        max_replicas: 60
+      - id: presidio
+        stage: entity_recognition
+        capacity_class: standard
+        throughput_bytes_per_hour: 8589934592
+        throughput_objects_per_hour: 5000
+        hourly_cost_microusd: 240000
+        min_replicas: 0
+        max_replicas: 50
+      - id: qwen
+        stage: contextual
+        capacity_class: gpu
+        throughput_bytes_per_hour: 6442450944
+        throughput_objects_per_hour: 1000
+        hourly_cost_microusd: 1100000
+        min_replicas: 0
+        max_replicas: 8
 
 presidio:
   enabled: true
@@ -151,7 +213,10 @@ presidio:
     tag: 2.2.362
     digest: sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9
   autoscaling:
-    minReplicas: 1
+    # Qualified directly in production on 2026-08-11. Two Gunicorn workers per
+    # pod provide 100 analyzer execution slots while Tika remains independently
+    # held for the mixed-content workload.
+    minReplicas: 50
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:

@@ -87,7 +87,7 @@
         },
         {
           "path": "internal/discovery/driver.go",
-          "sha256": "a7b7256de53592da6276404e5796ab96f42b16fb5b87eda74b0322f7bb82c788"
+          "sha256": "7a02f1409797d193d520366ebdb427056d0dc2d0b06015fbc44aaaee97a08aea"
         },
         {
           "path": "internal/extraction/archive.go",

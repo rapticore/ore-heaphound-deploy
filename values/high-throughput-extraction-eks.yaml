@@ -8,7 +8,9 @@
 # merging profile entries.
 extraction:
   autoscaling:
-    minReplicas: 24
+    # The active production fleet is intentionally held at sixty for the
+    # upcoming mixed-content workload. Make that posture release-owned.
+    minReplicas: 60
   resources:
     # The live 4-core pods were pinned at their CPU limit while memory settled
     # near 12 GiB. Fewer, wider parser JVMs reduce request queues and duplicate
@@ -19,14 +21,15 @@ extraction:
 
 capacityAdvisor:
   stageMaxReplicas:
-    # Keep the proven 24-replica Tika baseline with bounded scale-out to forty.
-    # Presidio has two analyzer processes per pod and was below one aggregate
-    # core at forty replicas; twenty is a generous ceiling now that measured
-    # stage occupancy, rather than total queue depth, drives its target.
-    tika: 40
-    presidio: 20
+    # Keep the proven 60-replica Tika mixed-content baseline.
+    # The earlier twenty-replica Presidio ceiling became the production
+    # bottleneck after full 128-MiB entity-recognition coverage. Fifty replicas
+    # were qualified in production with zero restarts/dead letters and about a
+    # threefold completed-object improvement.
+    tika: 60
+    presidio: 50
   catalog:
-    version: builtin-balanced-m8a-v5-stage-aware-tika40-presidio20
+    version: builtin-balanced-m8a-v6-stage-aware-tika60-presidio50
     profiles:
       - id: small
         stage: scan
@@ -59,7 +62,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 2000
         hourly_cost_microusd: 220000
         min_replicas: 1
-        max_replicas: 40
+        max_replicas: 60
       - id: presidio
         stage: entity_recognition
         capacity_class: standard
@@ -67,7 +70,7 @@ capacityAdvisor:
         throughput_objects_per_hour: 5000
         hourly_cost_microusd: 240000
         min_replicas: 0
-        max_replicas: 20
+        max_replicas: 50
       - id: qwen
         stage: contextual
         capacity_class: gpu
@@ -76,3 +79,10 @@ capacityAdvisor:
         hourly_cost_microusd: 1100000
         min_replicas: 0
         max_replicas: 8
+
+presidio:
+  # The direct production repair fixed both bounds at fifty. Preserve that
+  # floor in the signed values so Helm cannot scale the analyzer tier back to
+  # the former saturated state during the next release.
+  autoscaling:
+    minReplicas: 50
