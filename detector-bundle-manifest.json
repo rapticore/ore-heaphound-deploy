@@ -377,7 +377,7 @@
         },
         {
           "path": "internal/remediation/render.go",
-          "sha256": "6bcc4cfa8c1277db4580e7590951cfd40dcc4ef6cf5c98cabaaf5660988a9a81"
+          "sha256": "61969b79366ca595f0aa64dd9ee7aeafed4cf21c7d00a47827ec22e222ff9b97"
         },
         {
           "path": "internal/remediation/s3_tar_redactor.go",

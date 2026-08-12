@@ -14,7 +14,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:3a2dea2d3f0ad50a18736a805fab40421943095380e97bb2a853ee626a04fde0
+  digest: sha256:6332e4eb2faf68bc593985b9d627e298d4197312220cc51f697fc15840559eec
 
 extraction:
   enabled: true
@@ -32,7 +32,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:9f8670ab01275bb5d829b61692dcd62f88d1b5bfe74c6551b6f3d30d74f6baf9
+    digest: sha256:8ff962853c4636bd649e45e9578b4055516a954fd7addcbaa549b17a0a6849bc
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -104,7 +104,7 @@ scanWorkers:
     targetBytes: 16777216
     overlapBytes: 262144
   rulesetVersion: native:builtin-v11|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:44a8ae86efe6dcaa44a15c26c758df36cf6b437aa9b62b31a2afc60cc28a511f
+  detectorManifestDigest: sha256:b85b872d3e0f1f53ed52e2440e5f192bb878c5b285c2a7e4ae0c019c9bd8aa5f
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct

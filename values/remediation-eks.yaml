@@ -23,6 +23,12 @@ serviceAccount:
 # verifies a fresh exact inventory. It creates no extra dataset or rollback copy.
 remediation:
   enabled: true
+  planFirstRedaction:
+    enabled: true
+  autoscaling:
+    enabled: true
+    minReplicas: 4
+    maxReplicas: 50
   # First-class staged-snapshot classification, in-place redaction, exclusion,
   # and fresh verification. The chart keeps this opt-in; this production
   # remediation overlay supplies every required write/scratch dependency below.
@@ -75,6 +81,10 @@ remediation:
     presidioAnonymizer:
       enabled: true
       replicas: 2
+      autoscaling:
+        enabled: true
+        minReplicas: 4
+        maxReplicas: 25
       workers: 2
       timeoutSeconds: 300
       gracefulTimeoutSeconds: 300
