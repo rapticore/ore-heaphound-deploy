@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "version": "v0.1.0-develop.23.20",
+  "version": "v0.1.0-develop.23.21",
   "source": {
     "repository": "rapticore/ore_heaphound",
-    "commit": "f2c214994e2860716c93175d245f611fc23cb3cc"
+    "commit": "66d347a6b42a4b26814a6b271d5c6e6707be2afd"
   },
   "images": [
     {
       "component": "application",
       "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound",
-      "digest": "sha256:df6ff8625328a7ef33b46c57179c41262544e0ce5526a8511c011950d0015d07",
+      "digest": "sha256:05308d5b5743e7197c4014ca9865e7eb490ae9e793a00b3996fc3dc7bc704758",
       "signature": "sigstore-keyless",
       "attestations": [
         "slsa-provenance",
@@ -19,7 +19,7 @@
     {
       "component": "extraction",
       "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound-tika",
-      "digest": "sha256:922631658b3ac1d638862adf0719ccf3b85887f41a71091694511d6938df5e63",
+      "digest": "sha256:efada5d5997c948555aa4df5e39bad5b4b86f7bd5eff6c2cf7026c5e001e486b",
       "signature": "sigstore-keyless",
       "attestations": [
         "slsa-provenance",
@@ -30,16 +30,16 @@
   "artifacts": {
     "helm_charts": [
       {
-        "name": "sddp-0.1.0-develop.23.20.tgz",
-        "sha256": "760895a5840cc1cba119a32fb91af02198f9c49afc8e7e405ec12b8f65b6fe9c"
+        "name": "sddp-0.1.0-develop.23.21.tgz",
+        "sha256": "555793b623a83a4aa177cf658ca5d34a73492077a5e1deeb773fca823a11e6d2"
       },
       {
-        "name": "sddp-admission-0.1.0-develop.23.20.tgz",
-        "sha256": "b21c54029fc02d8c722e7b7b23ae6e0d9abbcd38bf019cf7a41630c768bb5345"
+        "name": "sddp-admission-0.1.0-develop.23.21.tgz",
+        "sha256": "669ce005de3884c78c7095668221825082196aba19d11cadcfa1809c0eec7113"
       },
       {
-        "name": "sddp-execution-plane-0.1.0-develop.23.20.tgz",
-        "sha256": "0beaa0155c01f4039b91c9d07db6985e9a15427dfbd436cec184a22b31b8b0d4"
+        "name": "sddp-execution-plane-0.1.0-develop.23.21.tgz",
+        "sha256": "2d957a808fc891a749f1c1862a86cce43c6c3860534b343c51700f7f6c11e27d"
       }
     ],
     "capability_catalog": {
@@ -62,7 +62,7 @@
   },
   "build": {
     "system": "github-actions",
-    "workflow_run": "31653826538/1",
+    "workflow_run": "31666010653/1",
     "manifest_signature": "sigstore-keyless-bundle"
   },
   "qualification": {
