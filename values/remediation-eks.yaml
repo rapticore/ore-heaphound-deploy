@@ -27,8 +27,9 @@ remediation:
     enabled: true
   autoscaling:
     enabled: true
-    minReplicas: 4
+    minReplicas: 1
     maxReplicas: 50
+    cooldownPeriod: 300
   # First-class staged-snapshot classification, in-place redaction, exclusion,
   # and fresh verification. The chart keeps this opt-in; this production
   # remediation overlay supplies every required write/scratch dependency below.
@@ -83,8 +84,10 @@ remediation:
       replicas: 2
       autoscaling:
         enabled: true
-        minReplicas: 4
+        minReplicas: 2
         maxReplicas: 25
+        cooldownPeriod: 300
+        cpuTargetUtilization: 70
       workers: 2
       timeoutSeconds: 300
       gracefulTimeoutSeconds: 300
@@ -94,5 +97,5 @@ remediation:
       provider: ollama
       model: qwen2.5:7b-instruct
       modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-      version: qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e|redaction-validator:v4
+      version: qwen2.5:7b-instruct|phi-span-prompt:v5|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e|redaction-validator:v4
       dataPolicyId: private-local-redaction-validation-v1

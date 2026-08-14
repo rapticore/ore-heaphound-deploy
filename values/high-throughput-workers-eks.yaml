@@ -1,5 +1,6 @@
-# Optional additive overlay for a bounded 143-pod scan-worker baseline with
-# requests calibrated from a live production utilization sample.
+# Optional additive overlay for scan-worker ceilings and requests calibrated
+# from a live production utilization sample. Low warm floors plus KEDA demand
+# and CPU pressure avoid reserving the full 143-pod envelope while it is idle.
 #
 # Helm replaces lists, so this file intentionally contains the complete worker
 # pool list. Apply it after values/central-eks.yaml and before any
@@ -9,7 +10,9 @@ capacityAdvisor:
   workerPools:
     - name: small
       capacityClass: small
-      minReplicas: 120
+      # This is a concurrency floor, not an idle-capacity target: these workers
+      # wait on Presidio and therefore do not expose useful CPU pressure.
+      minReplicas: 25
       maxReplicas: 120
       concurrency: 4
       placements: []
@@ -20,7 +23,7 @@ capacityAdvisor:
         limits: { cpu: "2", memory: "4Gi" }
     - name: standard
       capacityClass: standard
-      minReplicas: 8
+      minReplicas: 1
       maxReplicas: 8
       concurrency: 4
       placements: []
@@ -29,7 +32,7 @@ capacityAdvisor:
         limits: { cpu: "4", memory: "8Gi" }
     - name: large
       capacityClass: large
-      minReplicas: 15
+      minReplicas: 0
       maxReplicas: 20
       concurrency: 2
       placements: []
@@ -98,10 +101,9 @@ capacityAdvisor:
 # Tika and Presidio stage ceilings and complete capacity catalog.
 presidio:
   autoscaling:
-    # This overlay is rendered after the extraction overlay in the supported
-    # release path. Repeat the qualified floor so list/map replacement cannot
-    # silently restore the former twenty-replica bottleneck.
-    minReplicas: 50
+    # Repeat the elastic HA floor because this overlay is rendered after the
+    # extraction overlay. CPU pressure retains the 50-pod busy envelope.
+    minReplicas: 3
   resources:
     # en_core_web_lg is roughly 800 MiB before request-serving overhead. The
     # prior 1280-MiB reservation left too little measured runtime headroom.

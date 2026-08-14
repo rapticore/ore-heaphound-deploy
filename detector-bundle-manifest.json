@@ -7,7 +7,7 @@
       "id": "contextual_model",
       "kind": "contextual_model",
       "enabled": true,
-      "version": "qwen2.5:7b-instruct|phi-span-prompt:v4",
+      "version": "qwen2.5:7b-instruct|phi-span-prompt:v5",
       "runtime": "source-local-ollama-0.32.0",
       "source": "https://ollama.com/library/qwen2.5",
       "license": {
@@ -24,12 +24,16 @@
       ],
       "inputs": [
         {
+          "path": "internal/detection/candidate_policy.go",
+          "sha256": "4b57d85fb9d010e831cf2e146747129b41c6da556578af7fc7712767395bbbc6"
+        },
+        {
           "path": "internal/detection/llm/client.go",
           "sha256": "1bc312915f4aa313a8008c0b114f08ccb57b03a5cb815c353732acd28e0cf4df"
         },
         {
           "path": "internal/detection/llm/llm.go",
-          "sha256": "4d1b543eca95b530b7c44de41725371cba09ba514634d4bd9d5109d06f179c30"
+          "sha256": "7a00991e9f8d39ce17cfab24d5c2889fbf47ce3d66e934b229a64582fd323fa6"
         },
         {
           "path": "internal/detection/locate.go",
@@ -37,7 +41,7 @@
         },
         {
           "path": "internal/modelconfig/config.go",
-          "sha256": "67965be9adb921d50e50db385ec445ce3a6b4278a4db87020bc4780114150281"
+          "sha256": "15af92e9e689b6f9dcfb9a324860ef526d7843d78d46bd2807967230a8dc14b2"
         }
       ],
       "limitations": [
@@ -67,11 +71,11 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "8d91bf2ab57d66d02d15be9363a95add28b4b2f9298b71d6a8b512d6fd82dd36"
+          "sha256": "92d9b2ae04dacf9fa4c8e9066f1f03bda67fad374beaf40669056ba08506dfbf"
         },
         {
           "path": "Dockerfile.tika",
-          "sha256": "1b5b827d94e1c7a5845b48df3bee68ac0d3a87dcabe51bd0ff4dcb590a139307"
+          "sha256": "742218deeb8e8b6782e2d7c349844ed2de40b9ea4bdfdf5aab4b7f505eb3f582"
         },
         {
           "path": "cmd/scan-worker/main.go",
@@ -87,7 +91,7 @@
         },
         {
           "path": "internal/discovery/driver.go",
-          "sha256": "7a02f1409797d193d520366ebdb427056d0dc2d0b06015fbc44aaaee97a08aea"
+          "sha256": "791543a8acd6eb3683d1a871916d7b973e59000e99d6180072c15029701b4b17"
         },
         {
           "path": "internal/extraction/archive.go",
@@ -135,7 +139,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "f61ef2f5c50a69bc85af2122b4c2d9e327b4e1ed40a437ffa5567b7219133f43"
+          "sha256": "272bb81e172f8129b947abe967a4a15580e54eb6da414d0c99649695f43e134f"
         },
         {
           "path": "internal/redaction/redaction.go",
@@ -143,7 +147,11 @@
         },
         {
           "path": "internal/remote/checkpoint.go",
-          "sha256": "758638643dabc8d94278aea60583b24338c01c60d12e0a4a39b5d00eaed32511"
+          "sha256": "1f1f76ac2a63d133d235ca9f0dd2c9ea9c6993288966b40eec6df6189f56c550"
+        },
+        {
+          "path": "internal/remote/protocol.go",
+          "sha256": "e3bbf9b9db568698077a1d090455773dca0dd71c660eeb59ca2950e3234559da"
         },
         {
           "path": "internal/scanner/archive_member_fetcher.go",
@@ -151,7 +159,7 @@
         },
         {
           "path": "internal/scanner/handler.go",
-          "sha256": "4526d3b957fb69d233148894216ae177466055a5b75a4592a6ca245edef7c285"
+          "sha256": "a69f2bc7454591e9e679d27959cb5c4b325b26a4f600bcea1a5463d6132f6c25"
         },
         {
           "path": "internal/scanner/range_shards.go",
@@ -163,15 +171,15 @@
         },
         {
           "path": "internal/scanner/s3_tar.go",
-          "sha256": "89bc5d7e4ea626b06fd701630579cf30b9c7e9eb638e52dc6ea9789d3db69c74"
+          "sha256": "c8e73cd45d402ba7e67c8041c0f36f6ad5328342ccbeaeb0973770fe7a06e9a2"
         },
         {
           "path": "internal/scanner/s3_zip.go",
-          "sha256": "62c1d8fd41b3b95a02d7b679c5e29214594c43047bd724f28cb983f1ff7315db"
+          "sha256": "5b2ebcb85edc4536846e35f2e15b907867640912184cef701953d383e15971f7"
         },
         {
           "path": "internal/scanner/streaming.go",
-          "sha256": "a5963f5b59be1c8cf2abffe109bdd12202d6a41e7352c932fe4ca0f52e8a54c7"
+          "sha256": "58ea0b9807007853b9c9768384a86fbde665324d814931e52705ea7d23ea5d18"
         },
         {
           "path": "internal/tarmember/locator.go",
@@ -207,7 +215,7 @@
         },
         {
           "path": "internal/worker/worker.go",
-          "sha256": "ee442f8610b192400f29eb7f4c6f663670e21d0790b7d71304dbee964ca15cd4"
+          "sha256": "e8553ef19b0266f8b3a23f2d81579d1e04b41b5e11d77db82bbbe56785fad19c"
         },
         {
           "path": "internal/zipmember/locator.go",
@@ -242,7 +250,11 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "8d91bf2ab57d66d02d15be9363a95add28b4b2f9298b71d6a8b512d6fd82dd36"
+          "sha256": "92d9b2ae04dacf9fa4c8e9066f1f03bda67fad374beaf40669056ba08506dfbf"
+        },
+        {
+          "path": "internal/detection/candidate_policy.go",
+          "sha256": "4b57d85fb9d010e831cf2e146747129b41c6da556578af7fc7712767395bbbc6"
         },
         {
           "path": "internal/detection/locate.go",
@@ -250,11 +262,11 @@
         },
         {
           "path": "internal/secrets/kingfisher.go",
-          "sha256": "355e1e6d8f690d151f2842e503d3977cba753a9a24d1bb01d631453b291bc8e7"
+          "sha256": "0a2093bdeebe0515d630780fad89d600f9e9227ec1a2c0d3dad20c551f1aa85c"
         },
         {
           "path": "internal/secrets/secrets.go",
-          "sha256": "a06e3c4f644b502e6023ac07b504879b30d0c6339698c62714bef9567470f8f3"
+          "sha256": "f3249b609f26966ed5e5ee61ace801eb57132b214923093451e54af18b453693"
         }
       ]
     },
@@ -262,7 +274,7 @@
       "id": "native",
       "kind": "native_rules",
       "enabled": true,
-      "version": "builtin-v11",
+      "version": "builtin-v12",
       "runtime": "application-image-in-process",
       "source": "repository://internal/detection",
       "license": {
@@ -273,7 +285,15 @@
       "inputs": [
         {
           "path": "internal/classification/classes.go",
-          "sha256": "27096d042ba6779b741b3fe54543d20a4665fd33ce50b2ed1bbdddd48a00fb52"
+          "sha256": "abb01ef2a37216a25dd2512b29c1c8a8e2971744c7e7b7f82e0198b83be4a646"
+        },
+        {
+          "path": "internal/detection/candidate_policy.go",
+          "sha256": "4b57d85fb9d010e831cf2e146747129b41c6da556578af7fc7712767395bbbc6"
+        },
+        {
+          "path": "internal/detection/candidate_policy_test.go",
+          "sha256": "15816e7e07c7c354ed341bb4320e4fbfc96270a9129bd712996de7f1ae7fcb8f"
         },
         {
           "path": "internal/detection/cloud_secrets.go",
@@ -281,7 +301,7 @@
         },
         {
           "path": "internal/detection/detection.go",
-          "sha256": "1084a05c4f8d826880dd6fa9c1b80626d1a23bc6c6e7025bf8d7fafd4bf84265"
+          "sha256": "0db55b065e18845bb7d6ac317b6ac40429ae4cf8b51ebb8f8f5052fd12217424"
         },
         {
           "path": "internal/detection/identifiers.go",
@@ -293,15 +313,15 @@
         },
         {
           "path": "internal/detection/profile_identifiers.go",
-          "sha256": "d5a59bcee4fcc433f4afd28d31d57692100e2455fbd37c63b1c9c1889d3ea74a"
+          "sha256": "3d52958722177e81b50c3993214cf28cdb6cd6870248a9db34cca8407cca9f83"
         },
         {
           "path": "internal/detection/recognizers.go",
-          "sha256": "329c39994ab913292276df1fa0b396d6a684e2fb3cb237d889e80955279ffe04"
+          "sha256": "3ac31bb99f5808dbba8f306cc21eac4c5a08888876a6b5e86753dab04bc9d828"
         },
         {
           "path": "internal/detection/secrets.go",
-          "sha256": "ebd04c9da620fa6a8c8a590979ded4dd60c5a3a59d1103a64ddb7fee0c584256"
+          "sha256": "aa4e59443daa8dca09fc6531d26b22911e6a50ce2618bcd2a379eaac5700c9fb"
         },
         {
           "path": "internal/detection/taxonomy_recognizers.go",
@@ -309,11 +329,11 @@
         },
         {
           "path": "internal/quality/corpus.go",
-          "sha256": "18c34f5ec3293e87127502488181806eb27c12da0713d57abc024edff92bffdf"
+          "sha256": "a0ec1f80e5e46a059a619f1adf54ceec9c3e1d96a2792e46dde7e067372ea127"
         },
         {
           "path": "internal/quality/quality_test.go",
-          "sha256": "54a0ae0fdbaac4a93e91fab2ed1c8bc776bc19efe10c45df05b46e66a33e28b2"
+          "sha256": "9768807fe54d81d0d99b7d8ff057f6f27e4e4cf234b77756c74f4826c4345ea0"
         }
       ]
     },
@@ -339,11 +359,15 @@
       "inputs": [
         {
           "path": "deploy/helm/sddp/templates/presidio.yaml",
-          "sha256": "1977cb288fceec93f28163cfe705399e5bb0b0f28dedd8bf3021400615092b11"
+          "sha256": "3fff70580b41a9523dff655f8bdb43c8e6e0c49873185cd2e572d43bd301d822"
+        },
+        {
+          "path": "internal/detection/candidate_policy.go",
+          "sha256": "4b57d85fb9d010e831cf2e146747129b41c6da556578af7fc7712767395bbbc6"
         },
         {
           "path": "internal/detection/presidio/presidio.go",
-          "sha256": "790ed3d0fa13da7ff777c6a9152b5e2d1c88e03ed4e77e34bb88366f1539321b"
+          "sha256": "0c106542d5135d8dfaf7972a3d56e724193c2a0a6759fc5967c44a8e16fbb4a3"
         }
       ],
       "limitations": [

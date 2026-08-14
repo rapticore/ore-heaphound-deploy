@@ -14,15 +14,16 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:05308d5b5743e7197c4014ca9865e7eb490ae9e793a00b3996fc3dc7bc704758
+  digest: sha256:c4d2511420f6765d7ced48757f10c8ccd1c8f2675ef3755a8466da799fb6a6a9
 
 extraction:
   enabled: true
   denyEgress: true
   autoscaling:
-    # Mixed-content scans need the parser tier already warm; express this in
-    # signed values rather than relying on the current operational hold.
-    minReplicas: 60
+    # Three warm replicas preserve mixed-content availability; KEDA raises the
+    # tier to the qualified ceiling only when demand or CPU pressure requires.
+    minReplicas: 3
+    cpuTargetUtilization: 65
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:
@@ -32,7 +33,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:efada5d5997c948555aa4df5e39bad5b4b86f7bd5eff6c2cf7026c5e001e486b
+    digest: sha256:530544cdf4873337304a18d556d71eeff734b07fad0a976fc786dc730a783795
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
@@ -57,6 +58,13 @@ anchors:
 
 controlPlane:
   replicas: 3
+  autoscaling:
+    # Production probes must stop reusing the API selector before this can be
+    # enabled: an unrequested BestEffort probe invalidates CPU utilization.
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 6
+    cpuTargetUtilization: 70
   databasePool:
     maxConnections: 16
     minConnections: 2
@@ -69,6 +77,11 @@ controlPlane:
 verificationPreview:
   enabled: true
   replicas: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTargetUtilization: 70
   grantTTL: 60s
   maxSamples: 3
   hardMaxSamples: 10
@@ -76,6 +89,11 @@ verificationPreview:
 web:
   enabled: true
   replicas: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 6
+    cpuTargetUtilization: 70
   rollout:
     maxUnavailable: 1
     maxSurge: 0
@@ -93,6 +111,9 @@ web:
     requiredRoles: admin,approver
 
 scanWorkers:
+  rollout:
+    maxUnavailable: "10%"
+    maxSurge: 0
   sharding:
     enabled: true
     # Split large newline-oriented exports before one lease owns minutes of
@@ -103,13 +124,13 @@ scanWorkers:
     thresholdBytes: 67108864
     targetBytes: 16777216
     overlapBytes: 262144
-  rulesetVersion: native:builtin-v11|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-  detectorManifestDigest: sha256:b85b872d3e0f1f53ed52e2440e5f192bb878c5b285c2a7e4ae0c019c9bd8aa5f
+  rulesetVersion: native:builtin-v12|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v5|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+  detectorManifestDigest: sha256:bc6d9a63b48bbd8300112c6fc31dc72ebb2d50deccfa73eeecd4ed7a39a44be8
   contextualEngine:
     enabled: true
     model: qwen2.5:7b-instruct
     modelDigest: sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
-    version: qwen2.5:7b-instruct|phi-span-prompt:v4|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
+    version: qwen2.5:7b-instruct|phi-span-prompt:v5|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
   presidioEngine:
     enabled: true
     local: true
@@ -122,6 +143,7 @@ scanWorkers:
   keda:
     enabled: true
     maxReplicas: 200
+    cpuTargetUtilization: 70
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:
@@ -213,10 +235,10 @@ presidio:
     tag: 2.2.362
     digest: sha256:286e3fa7f3a7426e775e8564fe1870f1ba8f999d3ab8bbb8cc46a44355d9d6e9
   autoscaling:
-    # Qualified directly in production on 2026-08-11. Two Gunicorn workers per
-    # pod provide 100 analyzer execution slots while Tika remains independently
-    # held for the mixed-content workload.
-    minReplicas: 50
+    # Qualified directly in production on 2026-08-11 up to 50 pods. Keep an HA
+    # floor and let measured CPU pressure retain/restore that busy capacity.
+    minReplicas: 3
+    cpuTargetUtilization: 70
   nodeSelector:
     rapticore.io/workload: scan
   tolerations:
@@ -270,6 +292,7 @@ resilience:
     webMinAvailable: 2
     extractionMinAvailable: 1
     presidioMinAvailable: 1
+    presidioMaxUnavailable: 1
     verificationMinAvailable: 1
   topologySpread:
     enabled: true

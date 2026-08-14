@@ -804,7 +804,14 @@ resource "kubectl_manifest" "node_pool" {
         # Spot interruptions remain recoverable, but routine consolidation only
         # removes an empty LLM node; it never churns a busy underutilized node.
         consolidationPolicy = each.value.workload == "llm" ? "WhenEmpty" : "WhenEmptyOrUnderutilized"
-        consolidateAfter    = each.value.workload == "llm" ? "10m" : "60s"
+        # KEDA and large Deployment rollouts need enough time to settle before
+        # Karpenter starts moving scan pods again. Ten minutes still removes
+        # idle nodes promptly without turning ordinary scale-down into churn.
+        consolidateAfter = "10m"
+        # Bound voluntary disruption even after the quiet window. EC2 Spot
+        # interruptions are involuntary and remain recoverable through the
+        # lower-weight on-demand scan pool.
+        budgets = [{ nodes = "10%" }]
       }
     }
   })

@@ -8,9 +8,9 @@
 # merging profile entries.
 extraction:
   autoscaling:
-    # The active production fleet is intentionally held at sixty for the
-    # upcoming mixed-content workload. Make that posture release-owned.
-    minReplicas: 60
+    # Keep a warm HA parser path and scale to the qualified 60-pod ceiling only
+    # while advisor demand or measured CPU pressure requires it.
+    minReplicas: 3
   resources:
     # The live 4-core pods were pinned at their CPU limit while memory settled
     # near 12 GiB. Fewer, wider parser JVMs reduce request queues and duplicate
@@ -81,8 +81,6 @@ capacityAdvisor:
         max_replicas: 8
 
 presidio:
-  # The direct production repair fixed both bounds at fifty. Preserve that
-  # floor in the signed values so Helm cannot scale the analyzer tier back to
-  # the former saturated state during the next release.
+  # Preserve the qualified 50-pod ceiling while leaving only an HA floor idle.
   autoscaling:
-    minReplicas: 50
+    minReplicas: 3
