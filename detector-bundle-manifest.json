@@ -139,7 +139,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "272bb81e172f8129b947abe967a4a15580e54eb6da414d0c99649695f43e134f"
+          "sha256": "23c53c85a1c4c79d592b405588c85be8de4fe2e20d67b02731e8a8d463f98e17"
         },
         {
           "path": "internal/redaction/redaction.go",
