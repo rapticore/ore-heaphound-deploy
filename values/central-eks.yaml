@@ -14,7 +14,7 @@ networkPolicy:
 image:
   registry: public.ecr.aws
   repository: n7r3j2c0/ore-heaphound
-  digest: sha256:8a05be36ba084389ad13230c2fef495e754c0c7ca006055a850b075c69bab41f
+  digest: sha256:f3c64a548bf4812af9ef13037ac251f1845497deac8b983edb0c98578005ada9
 
 extraction:
   enabled: true
@@ -33,7 +33,7 @@ extraction:
       effect: NoSchedule
   image:
     repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-    digest: sha256:4e13096d69bd2f0747c3a97dbb929bff1bd8315db2d236e9fa2c5e773c6c6e00
+    digest: sha256:54cc906d274188e12ed117e6428d13275aaff0407cabe65f3b347aa636339da7
 
 existingSecret: sddp-production-operator-secrets
 generatedSecret: sddp-production-generated
