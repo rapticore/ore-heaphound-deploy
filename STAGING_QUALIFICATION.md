@@ -161,15 +161,18 @@ For a deployment, use this interaction sequence:
    and verify the public GitHub release, pull/inspect public OCI artifacts,
    inspect the locked model/source/license inventory, discover the active cloud
    identity, and run read-only validation/planning without asking permission.
-2. Ask one compact configuration question with recommended defaults for any
-   material choice that discovery cannot resolve. Accept “use rapid defaults”
-   as the answer: AWS/EKS plus S3, generated collision-checked names, local
-   port-forward access, bounded synthetic smoke, on-demand fallback, and all
-   cross-cloud/disruptive/remediation extensions off.
+2. If the request and discovery leave material choices unresolved, ask at most
+   one compact configuration question with recommended defaults. Ask nothing
+   when they already resolve the deployment. Accept “use rapid defaults” as
+   the answer: AWS/EKS plus S3, generated collision-checked names, local port-
+   forward access, bounded synthetic smoke, on-demand fallback, and all cross-
+   cloud/disruptive/remediation extensions off.
 3. Resolve remaining safe values automatically, complete preflight, and
    present one digest-bound pre-install decision packet.
-4. Ask one deployment question. A yes starts the continuous installation,
-   selected validation, cleanup, and readiness report.
+4. Ask exactly one final deployment question. A yes starts the continuous
+   installation, selected validation, cleanup, readiness report, and—when
+   `stable_qualification` was selected—the complete target qualification and
+   protected-finalization sequence described by the packet.
 5. Do not ask for permission again. Stop only for a material deviation listed
    in the authorization model; explain the deviation and produce a new packet
    only when the proposed recovery changes approved scope, plan, identity,
@@ -180,82 +183,57 @@ Bundle them before planning whenever possible; never turn routine progress,
 license metadata, credentials refresh, retries, health waits, or cleanup into
 a permission prompt.
 
-### Guided customer interview
+### Guided configuration resolution
 
-Ask questions in short groups and adapt follow-ups to the answers. Do not
-recite every template field. The minimum interview is:
+The customer does not answer a field-by-field questionnaire. First infer the
+goal and lane from the request, discover the authenticated identity, target
+coordinates, versions, quotas, existing ownership, and safe generated names,
+and read the signed release's model/license/digest inventory. Use the compact
+configuration question only for unresolved choices in these groups:
 
-1. **Goal.** Ask whether this is a new develop rehearsal, a stable
-   qualification, a resume, or a decommission. Recommend a new develop
-   rehearsal for the first walkthrough.
-2. **Cloud scope.** Recommend AWS/EKS plus an S3 source for the rapid initial
-   production installation. Offer GCS and a remote GKE or AKS worker only when
-   the customer wants cross-cloud qualification. State that AWS/S3-only cannot
-   pass the GCS identity check or the full cross-cloud qualification profile,
-   but it does not block AWS/S3 deployment readiness.
-3. **Identity and region.** Discover the authenticated cloud identity and show
-   the account/project/subscription and role to the customer. Recommend
-   `us-west-2` for AWS and `us-central1` for GCP unless customer policy,
-   residency, service availability, or quotas require another supported
-   region. Ask for confirmation, not re-entry.
-4. **Access.** Recommend local `kubectl port-forward` access for the isolated
-   rehearsal. If the customer wants internal DNS/TLS or remote workers, ask
-   for the existing private zone, certificate/secret reference, and exact
-   administrator or gateway CIDRs. Never default to public internet access.
-5. **Data and model.** Confirm synthetic data only and recommend the 100 GiB
-   test. Show the exact locked model, source, license expression, and digest as
-   release inventory; do not ask for a separate license acceptance. Never
-   request model weights or source values in chat.
-6. **Cost and retention.** Recommend the smallest representative staging
-   profile and 365-day evidence retention. Ask whether the customer has a
-   ceiling now or wants the agent to propose one from the Terraform plan, which
-   is the recommended default. Require an explicit non-zero ceiling before
-   apply.
-7. **Names and prerequisites.** Ask once whether the customer prefers existing
-   approved resources/names or agent-generated names. Recommend generated
-   dedicated names for staging. If existing resources are selected, ask only
-   for their identifiers and prove they are suitable with read-only checks.
-8. **Optional tests.** In the same choices summary, list Spot interruption,
-   fault injection, RDS restore, migration-failure, and synthetic remediation.
-   Default each to `false` for the rapid production path. A selected test is
-   included in the final deployment approval; it does not cause a later
-   permission question.
-9. **Approval identity.** Ask what customer name or approved corporate identity
-   should be recorded as approver and whether an existing change-ticket
-   reference should be used. If no ticket is required by customer policy,
-   generate a random `interactive-approval-<UTC>-<suffix>` reference and include
-   it in the pre-install packet rather than asking a separate question.
+- develop rehearsal versus stable qualification, and new versus existing EKS;
+- AWS/S3-only versus selected GCS, Azure, Slack, managed-ingest, or remote-
+  worker scope;
+- local port-forward, internal/private TLS, or restricted public TLS exposure;
+- exceptions to synthetic-only data, read-only discovery, generated names,
+  bounded smoke, optional-test defaults, 365-day retention, or the plan-derived
+  cost ceiling; and
+- a customer-required approval identity or change ticket that cannot be
+  obtained from the authenticated session or generated under customer policy.
 
-The agent should summarize inferred defaults in plain language and allow the
-customer to change them. “Use recommended defaults” is a valid answer for all
-non-destructive choices. Silence, ambiguity, or “do whatever” is never approval
-for cloud mutation, fault injection, remediation, qualification finalization,
-or deletion.
+Recommend a develop rehearsal for a first walkthrough. Rapid defaults use the
+authenticated AWS identity, a supported discovered Region (or `us-west-2`),
+AWS/EKS with a synthetic S3 source, generated dedicated names, local port-
+forward access, the smallest representative profile, 100 GiB synthetic test
+data, bounded smoke, approved on-demand fallback, and no cross-cloud,
+interruption, restore, fault, or remediation extensions. Generate an
+`interactive-approval-<UTC>-<suffix>` reference when customer policy does not
+require a ticket. Require a non-zero cost ceiling from the completed plans
+before apply, but do not ask the customer to calculate it.
 
-For a typical first rehearsal, the interaction should be close to:
+For `develop_rehearsal`, set qualification intent to `rehearsal_only`. For
+`stable_qualification`, set it to `qualify_when_eligible` and bind all 12 live
+checks plus protected finalization into the final decision packet. The fixed
+qualification profile overrides rehearsal defaults: automatically include its
+required keyless GCS identity, restore, interruption, migration-recovery, and
+synthetic-remediation tests and their cost/scope in the packet. Do not ask a
+separate qualification-finalization question. The detector bundle still
+requires cryptographic approval from two distinct authorized people—one
+quality reviewer and one release reviewer—and the finalizer still requires the
+independent `production-qualification` environment review. These are
+governance gates, not routine configuration prompts, and cannot be bypassed or
+self-approved.
 
-> **Agent:** I found one authenticated AWS account and role. May I use that
-> identity in `us-west-2` for a new develop rehearsal?
->
-> **Customer:** Yes.
->
-> **Agent:** I recommend AWS/EKS with a synthetic S3 source, generated
-> dedicated names, local port-forward access, a bounded synthetic smoke test,
-> 365-day evidence retention, Spot workers with approved fallback, and no
-> remote cloud, interruption, restore, fault, or remediation tests. Use those
-> rapid defaults?
->
-> **Customer:** Yes. Use the recommended defaults.
->
-> **Agent:** What customer identity should I record as approver, and do you
-> have a change ticket or should I generate a session reference?
+The agent summarizes all inferred choices and rapid defaults in the final
+packet, where the customer can reject or change them before mutation. Silence,
+ambiguity, or “do whatever” is never approval for mutation or deletion.
 
 After planning, the agent presents the one pre-install decision packet and asks
 one explicit deployment question covering the exact plan, routine secret
-population, locked-model staging, chart installation, bounded smoke test, and
-any selected optional tests within the displayed cost ceiling. It does not
-stop for separate input, model, node-size, workload, test, or retry approvals.
-The customer does not answer a field-by-field questionnaire.
+population, locked-model staging, chart installation, bounded smoke test, any
+selected optional tests within the displayed cost ceiling, and the governed
+qualification sequence when selected. It does not stop for separate input,
+model, node-size, workload, test, finalization, or retry approvals.
 
 ### Reconcile an existing develop rehearsal
 
@@ -595,10 +573,10 @@ checksums independently verify against the prior readiness report.
 Before network or cloud mutation:
 
 1. create the private working area below;
-2. conduct the guided interview and record the customer's answers without
-   secret values;
+2. perform guided configuration resolution within the one-prompt budget and
+   record any customer answers without secret values;
 3. safely parse `AGENT_DEPLOYMENT_SPEC.example.yaml` as an internal schema
-   template and require `schema_version: 5`;
+   template and require `schema_version: 7`;
 4. use authenticated read-only APIs to discover identity, region capability,
    existing resources, quotas, and name availability;
 5. resolve applicable `auto` values, generate collision-safe names, and leave
@@ -636,9 +614,34 @@ record in place.
 For `operation: deploy`, require `mode` to be `develop_rehearsal` or
 `stable_qualification` and `deployment_action` to be `new` or `resume`. A
 resume requires matching state lineage and the prior resolved-spec/readiness
-digest. If the mode is `stable_qualification`, ask whether qualification
-finalization is intended; do not set
-`qualification.finalization_requested: true` without an explicit answer.
+digest. Resolve `qualification.intent` and
+`qualification.finalization_requested` from the selected mode before the
+packet: rehearsal resolves to `rehearsal_only` and `false`; stable
+qualification resolves to `qualify_when_eligible` and `true`. The customer's
+single packet approval authorizes the exact finalization inputs and evidence
+destinations shown there; it does not replace the required independent
+detector signatures or protected-environment review.
+
+For `deployment_action: new`, require `aws.eks_installation_mode` to be exactly
+`new_eks` or `existing_eks`. `new_eks` uses the released AWS-central root.
+`existing_eks` binds the exact existing customer cluster but still requires a
+new namespace, application database/schema, Helm releases, operator/generated
+Secrets, evidence roots, and application identity. It must not run
+`infra/aws-central`; record customer-owned shared prerequisites and their
+separate application-prerequisite plans instead. A cluster that already has an
+Ore Heaphound installation is `resume`/`upgrade`, never a fresh install.
+For `stable_qualification`, the target must also match
+`aws-eks-single-tenant-v1` exactly. A shared existing EKS cluster may reach
+installation readiness but must return
+`BLOCKED_QUALIFICATION_PROFILE_MISMATCH`; only a dedicated compatible existing
+cluster or the dedicated `new_eks` lane can produce this profile's target
+qualification package.
+The current production profile requires a new PostgreSQL 16 database on Amazon
+RDS or Aurora PostgreSQL, `verify-full` TLS through the pinned AWS RDS CA
+bundle, and rotation-aware migration component credentials. It must render
+with `database.migrationJob.credentialMode: components`; URL mode or a
+non-RDS database requires a separately qualified profile rather than a
+validation bypass.
 
 For `operation: decommission`, require:
 

@@ -11,6 +11,13 @@ use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,
 DNS/ACM, and one-approval agent workflow, use
 [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md).
+For a brand-new customer application environment—either on a new dedicated EKS
+cluster or a compatible existing customer-owned EKS cluster—give the agent
+[DEPLOYMENT_AGENT_FRESH_INSTALL.md](DEPLOYMENT_AGENT_FRESH_INSTALL.md) as its
+controlling directive. It covers the current cumulative release posture,
+proves the application target is empty, separates the two infrastructure
+ownership lanes, and prevents upgrade-only operations from being applied to a
+fresh installation.
 For the explicitly authorized `v0.1.0-develop.23.4` production upgrade, give
 the deployment agent
 [DEPLOYMENT_AGENT_V23_4.md](DEPLOYMENT_AGENT_V23_4.md) as the controlling
@@ -28,9 +35,10 @@ For a design-partner engagement on the partner's own data with governed
 remediation enabled, use [DESIGN_PARTNER.md](DESIGN_PARTNER.md); it layers the
 remediation infrastructure, values, walkthrough, and scope statement on top of
 the production runbook.
-For an LLM-operated walkthrough, give the agent that runbook. It asks the
-customer a short guided set of questions, proposes collision-checked defaults,
-and generates the internal execution record from
+For an LLM-operated walkthrough, give the agent that runbook. It performs
+read-only discovery first, asks at most one compact configuration question for
+material choices it cannot resolve, proposes collision-checked defaults, and
+generates the internal execution record from
 [AGENT_DEPLOYMENT_SPEC.example.yaml](AGENT_DEPLOYMENT_SPEC.example.yaml);
 the customer does not complete YAML. The same runbook contains phase I, the
 separately authorized LLM procedure for operational uninstall and eventual
@@ -50,8 +58,10 @@ atomically verified store that runtime pods mount read-only. Existing develop
 rehearsals should normally use the runbook's approval-bound system-node helper
 followed by a fresh saved-plan reconciliation, not decommission and recreation.
 
-For a normal production deployment, the customer approves one reviewed
-pre-install decision packet after the agent finishes read-only discovery,
+For a normal production deployment, the customer answers no configuration
+question when its request and discovery are complete; otherwise it answers at
+most one compact question. It then approves one reviewed pre-install decision
+packet after the agent finishes read-only discovery,
 artifact/model verification, planning, rendering, and cost estimation. That
 single approval covers routine prerequisite creation, secret population,
 locked-model staging, chart installation, temporary-resource cleanup, bounded
@@ -62,7 +72,12 @@ material deviation from the approved identity, scope, plan, security controls,
 or cost stops the run. Decommissioning remains a separate destructive action.
 The rapid default is AWS/EKS plus S3; GCS, remote workers, interruption/fault
 tests, restore/failure tests, and remediation are selected only when the
-customer wants the corresponding qualification evidence.
+customer wants the corresponding qualification evidence. Selecting stable
+qualification automatically selects every synthetic extension required by its
+fixed profile and binds the 12 target checks and protected finalization into
+that same packet; independent detector reviewers and the protected-environment
+reviewer remain mandatory governance controls rather than additional
+configuration questions.
 
 The `main` branch contains the current deployment templates and may retain
 `REPLACE_*` markers. For production, check out an immutable `vX.Y.Z` release

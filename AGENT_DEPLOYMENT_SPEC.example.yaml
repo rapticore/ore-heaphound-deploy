@@ -1,18 +1,27 @@
 # Agent-generated, non-secret execution record for an LLM-operated deployment.
-# The customer is not expected to complete this file. The agent asks a short
-# guided set of questions, discovers safe values from authenticated read-only
-# APIs, resolves every auto/null field, completes read-only planning, and then
-# presents one complete pre-install decision packet for approval.
+# The customer is not expected to complete this file. The agent discovers safe
+# values from authenticated read-only APIs, asks at most one compact
+# configuration question for unresolved material choices, resolves every
+# auto/null field, completes read-only planning, and then presents one complete
+# pre-install decision packet for approval.
 # Credentials and secret values must never be placed in this file.
 
-schema_version: 5
+schema_version: 7
 deployment_id: auto
 operation: deploy # deploy or decommission
 deployment_action: new # new or resume; ignored for decommission
 mode: develop_rehearsal # develop_rehearsal or stable_qualification
 
+interaction:
+  discovery_before_questions: true
+  maximum_configuration_prompts: 1
+  maximum_final_approval_prompts: 1
+  rapid_defaults: true
+  generate_change_reference_when_allowed: true
+  no_field_by_field_questionnaire: true
+
 release:
-  tag: auto_latest_develop
+  tag: auto_from_mode
   public_repository: https://github.com/rapticore/ore-heaphound-deploy
   expected_source_repository: rapticore/ore_heaphound
 
@@ -59,7 +68,18 @@ aws:
   expected_installer_role_name: null
   region: us-west-2
   administrator_cidrs: []
+  # Exactly one fresh-install lane. new_eks uses the released aws-central root;
+  # existing_eks installs only application-owned resources into the bound
+  # customer cluster and must not run aws-central.
+  eks_installation_mode: new_eks # new_eks or existing_eks
   cluster_name: auto
+  cluster_arn: auto
+  kube_context: auto
+  existing_cluster_is_shared: false
+  # Shared controllers/add-ons always remain customer-owned. A true value is
+  # allowed only for exact named changes in the approved prerequisite plan.
+  manage_shared_cluster_prerequisites: false
+  application_prerequisite_state_keys: []
   anchor_bucket: auto
   synthetic_source_bucket: auto
   synthetic_source_kms_key_arn: auto
@@ -117,6 +137,11 @@ network:
 
 kubernetes:
   namespace: sddp
+  namespace_must_be_new: true
+  cluster_prerequisite_owner: auto # installation_state or customer_platform
+  network_policy_enforcement: required
+  model_rwx_storage_class: auto
+  node_capacity_contract: auto
   prerequisite_lock: prerequisites.lock.json
   eks_kubernetes_version: auto_from_verified_lock
   eks_addon_versions: auto_from_verified_lock
@@ -126,6 +151,27 @@ kubernetes:
   nvidia_device_plugin_chart_version: auto_from_verified_lock
   karpenter_ami_alias: auto_from_verified_lock
   customer_values_file: auto_private_workdir
+
+database:
+  # The current production chart requires PostgreSQL 16 on Amazon RDS or
+  # Aurora PostgreSQL and verify-full TLS through its pinned AWS RDS CA bundle.
+  provider: aws_rds_or_aurora_postgresql
+  version: "16"
+  endpoint: auto
+  port: 5432
+  name: sddp
+  owner: auto # installation_state or customer_prerequisite_state
+  fresh_database_required: true
+  migration_ledger_must_be_empty: true
+  ssl_mode: verify-full
+  ssl_root_cert: /etc/ssl/certs/aws-rds-global-bundle.pem
+  migration_credential_mode: components
+  migration_component_secret_keys:
+    host: SDDP_MIGRATION_DATABASE_HOST
+    port: SDDP_MIGRATION_DATABASE_PORT
+    username: SDDP_MIGRATION_DATABASE_USERNAME
+    password: SDDP_MIGRATION_DATABASE_PASSWORD
+  backups_and_pitr_required: true
 
 model:
   model_reference: auto_from_verified_model_lock
@@ -147,7 +193,7 @@ secrets:
   delivery_method: auto
   controller_namespace: external-secrets
   operator_secret_reference: auto
-  operator_secret_terraform_owner: bootstrap_state
+  operator_secret_terraform_owner: bootstrap_or_customer_prerequisite_state
   web_tls_secret_reference: null
   gateway_tls_secret_reference: null
 
@@ -158,13 +204,25 @@ synthetic_test:
   target_size_gib: 100
 
 qualification:
+  # develop_rehearsal resolves to rehearsal_only. stable_qualification resolves
+  # to qualify_when_eligible and includes finalization in the one approved
+  # deployment packet; it is not a separate customer permission question.
+  intent: auto_from_mode
+  profile: aws-eks-single-tenant-v1
   target_id: auto
   evidence_retention_days: 365
   input_bucket: auto
   input_prefix: ore-heaphound/qualification-input
   archive_bucket: auto
   archive_prefix: ore-heaphound/qualification
-  finalization_requested: false
+  auto_run_required_checks: true
+  required_receipt_count: 12
+  required_checks_override_optional_test_defaults: true
+  target_must_match_profile: true
+  auto_submit_protected_finalizer: true
+  finalization_requested: auto_from_mode_and_packet
+  detector_minimum_approvals: 2
+  protected_environment_review_required: true
 
 decommission:
   # Keep this block inactive for deployment. During a removal interview, the
