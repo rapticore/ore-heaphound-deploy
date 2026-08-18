@@ -23,13 +23,15 @@ published tag.
 
 Ask only for:
 
-1. the AWS profile or credential source and expected 12-digit account ID;
-2. the target Region (default `us-west-2`);
-3. the deployment name, or permission to choose an available default;
-4. the exact S3 source bucket and optional source KMS key;
-5. the administrator/EKS and public-web CIDRs;
-6. the public hostname, if public web access is wanted; and
-7. either an issued ACM certificate ARN covering that hostname or permission
+1. the non-secret reference for the applicable written Rapticore business
+   authorization, unless it is already present in the approved change record;
+2. the AWS profile or credential source and expected 12-digit account ID;
+3. the target Region (default `us-west-2`);
+4. the deployment name, or permission to choose an available default;
+5. the exact S3 source bucket and optional source KMS key;
+6. the administrator/EKS and public-web CIDRs;
+7. the public hostname, if public web access is wanted; and
+8. either an issued ACM certificate ARN covering that hostname or permission
    to stop while the customer obtains one.
 
 Choose safe names automatically when invited to do so. Before choosing, query
@@ -126,9 +128,11 @@ After approval:
 12. run RDS and EFS restore drills in isolated restore targets, recording
     recovery time and integrity evidence.
 
-Do not treat license acceptance as a deployment gate. Model identity, digest,
-source, and license metadata belong in release provenance and customer
-documentation, not in a runtime permission ceremony.
+Do not create a runtime model-license acceptance ceremony. Third-party model
+identity, digest, source, and license metadata belong in release provenance and
+customer documentation. Separately, first-party use and deployment require the
+written Rapticore business authorization defined by the proprietary `LICENSE`;
+public artifact access alone is not authorization.
 
 ## Automatic release reconciliation
 
@@ -390,6 +394,13 @@ exact-source CI are available.
    ORE_HEAPHOUND_DEPLOYMENT_APPROVED=true \
      customer-deploy/scripts/reconcile-worker-autoscaling-pause.sh \
        clear sddp ore-heaphound
+   ```
+
+   Make the absence of stale holds an explicit rollout gate after clearing:
+
+   ```sh
+   customer-deploy/scripts/reconcile-worker-autoscaling-pause.sh \
+     assert-clear sddp ore-heaphound
    ```
 
    Substitute the actual namespace and Helm release. The helper must refuse to

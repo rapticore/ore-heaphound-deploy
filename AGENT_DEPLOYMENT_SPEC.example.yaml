@@ -31,6 +31,10 @@ naming:
   random_suffix_length: 8
 
 authorization:
+  # Required for any use or deployment of Rapticore's first-party software.
+  # This must reference an existing Authorized Agreement and must never be
+  # generated from the deployment change reference or public artifact access.
+  rapticore_business_authorization_reference: null
   # The agent resolves every decision and completes read-only preflight/planning
   # before asking one final deployment question. That one approval covers every
   # selected action below. The agent must not add permission stops during

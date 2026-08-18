@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 check|clear <namespace> <helm-release>" >&2
+  echo "usage: $0 check|assert-clear|clear <namespace> <helm-release>" >&2
   exit 2
 }
 
@@ -10,7 +10,7 @@ usage() {
 readonly MODE="$1"
 readonly NAMESPACE="$2"
 readonly RELEASE="$3"
-[[ "$MODE" == "check" || "$MODE" == "clear" ]] || usage
+[[ "$MODE" == "check" || "$MODE" == "assert-clear" || "$MODE" == "clear" ]] || usage
 [[ "$NAMESPACE" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || {
   echo "namespace must be a DNS label" >&2
   exit 2
@@ -48,6 +48,17 @@ if jq -e '.items[] | select((.spec.maxReplicaCount // 0) < 1)' <<<"$objects" >/d
 fi
 
 if [[ "$MODE" == "check" ]]; then
+  exit 0
+fi
+if [[ "$MODE" == "assert-clear" ]]; then
+  if jq -e '.items[] | select(
+    (.metadata.annotations["autoscaling.keda.sh/paused"] // "") != "" or
+    (.metadata.annotations["autoscaling.keda.sh/paused-replicas"] // "") != ""
+  )' <<<"$objects" >/dev/null; then
+    echo "a scan-worker administrative pause annotation remains" >&2
+    exit 1
+  fi
+  echo "scan-worker KEDA administrative pause annotations are clear"
   exit 0
 fi
 [[ "${ORE_HEAPHOUND_DEPLOYMENT_APPROVED:-}" == "true" ]] || {

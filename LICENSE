@@ -1,0 +1,160 @@
+RAPTICORE PROPRIETARY SOFTWARE LICENSE
+Version 1.0 — August 17, 2026
+
+Copyright © 2026 Rapticore, Inc. All rights reserved.
+
+IMPORTANT: Ore HeapHound and the first-party source code, object code,
+documentation, designs, schemas, rules, workflows, configuration, tests,
+assets, build materials, container images, and other materials distributed
+with it (collectively, the “Software”) are proprietary and confidential to
+Rapticore, Inc. (“Rapticore”). The Software is not open source.
+
+1. NO PUBLIC LICENSE
+
+Possession of or access to the Software does not grant any license or other
+right, whether by implication, estoppel, exhaustion, or otherwise. Except as
+expressly authorized by a written commercial, employment, contractor,
+evaluation, partner, or other business agreement executed by an authorized
+representative of Rapticore (an “Authorized Agreement”), no person or entity
+may access, use, reproduce, copy, install, run, host, deploy, evaluate, test,
+benchmark, modify, translate, adapt, or otherwise exploit the Software.
+
+An email, conversation, purchase inquiry, repository invitation, delivery of
+credentials, or access to a copy of the Software is not approval unless it is
+part of an Authorized Agreement or separately states in writing that it grants
+specific rights on behalf of Rapticore.
+
+2. PROHIBITED ACTIVITIES
+
+Unless an Authorized Agreement expressly permits the activity, you may not,
+directly or indirectly:
+
+  a. create, commission, assist with, or distribute any modification,
+     adaptation, translation, derivative work, or work based on the Software;
+
+  b. publish, disclose, transmit, distribute, sublicense, sell, rent, lease,
+     lend, assign, transfer, make available, or provide access to any part of
+     the Software to any third party;
+
+  c. reverse engineer, decompile, disassemble, decode, extract, inspect, or
+     analyze the Software to discover source code, structure, algorithms,
+     architecture, operation, non-public interfaces, or underlying ideas,
+     except only to the limited extent that such a restriction is prohibited
+     by mandatory law;
+
+  d. remove, conceal, or alter any copyright, proprietary, confidentiality,
+     attribution, trademark, or other rights notice;
+
+  e. use the Software or knowledge obtained from it to create, improve,
+     validate, benchmark, train, fine-tune, market, provide, or support any
+     product, service, software, model, dataset, design, workflow, or business
+     process, whether competing or otherwise;
+
+  f. use the Software or any information obtained from it for personal,
+     academic, research, governmental, nonprofit, internal, commercial, or
+     other purposes; or
+
+  g. permit or help another person or entity to do any of the foregoing.
+
+3. CONFIDENTIAL INFORMATION AND KNOW-HOW
+
+The Software and all non-public information revealed by or learned from it,
+including its concepts, techniques, designs, architectures, processes,
+workflows, algorithms, rules, inventions, discoveries, strategies, and
+know-how, are “Rapticore Confidential Information.” You must protect Rapticore
+Confidential Information using at least reasonable care, may use it only for
+the purpose expressly stated in an Authorized Agreement, and may disclose it
+only to people whom that agreement authorizes and who are bound by written
+confidentiality and use restrictions at least as protective as these terms.
+
+Rapticore Confidential Information does not include information that you can
+prove through contemporaneous written records: (a) became public through no
+breach of a duty; (b) was lawfully known to you without restriction before you
+received the Software; (c) was independently developed without access to or use
+of the Software or Rapticore Confidential Information; or (d) was lawfully
+received from a third party entitled to disclose it without restriction.
+
+If law or a binding court order requires disclosure, you must, to the extent
+legally permitted, notify Rapticore promptly, disclose only what is legally
+required, and reasonably assist efforts to obtain confidential treatment.
+
+4. AUTHORIZED BUSINESS USE
+
+An Authorized Agreement controls the scope, duration, users, systems,
+territory, and purposes of any permitted use. All rights not expressly granted
+in that agreement are reserved. If these terms conflict with an Authorized
+Agreement, the Authorized Agreement controls only for the Software and parties
+within its stated scope.
+
+Upon expiration, termination, or Rapticore’s written request, you must stop all
+use and return or permanently destroy every copy of the Software and Rapticore
+Confidential Information in your possession or control, except to the extent an
+Authorized Agreement or mandatory law expressly requires retention.
+
+5. OWNERSHIP
+
+As between you and Rapticore, Rapticore retains all right, title, and interest
+in and to the Software, Rapticore Confidential Information, and the Rapticore
+materials embodied in every authorized copy, modification, and derivative
+work, including all copyright, patent, trade-secret, trademark, and other
+intellectual-property rights. Ownership of any expressly authorized
+modification or derivative work is determined by its Authorized Agreement. No
+patent, trademark, or other intellectual-property license is granted.
+
+6. THIRD-PARTY MATERIALS
+
+Third-party software, fonts, models, datasets, and other components included
+with or used by the Software remain governed by their respective licenses and
+notices, as identified in NOTICE and the release dependency inventory. These
+terms do not restrict rights granted directly by a third-party licensor in its
+own materials. No third-party license grants rights in Rapticore’s first-party
+Software or Rapticore Confidential Information.
+
+7. PRIOR RELEASES
+
+These terms apply to the first-party Software version with which they are
+distributed and to later versions that identify this license. They do not
+cancel, revoke, or narrow rights that were validly granted for a particular
+earlier copy under the Apache License, Version 2.0, or another written license.
+Receiving rights to an earlier version does not grant rights to this or any
+later proprietary version.
+
+8. TERMINATION AND REMEDIES
+
+Any authorization terminates immediately upon breach unless an Authorized
+Agreement states otherwise. Unauthorized use or disclosure may cause
+irreparable harm for which monetary damages are inadequate. Rapticore may seek
+injunctive relief and any other remedies available under contract, copyright,
+trade-secret, patent, trademark, or other applicable law.
+
+9. DISCLAIMER
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED “AS IS” AND
+“AS AVAILABLE,” WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EXPRESS,
+IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING WARRANTIES OF TITLE,
+NON-INFRINGEMENT, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, SECURITY,
+ACCURACY, OR RELIABILITY.
+
+10. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, RAPTICORE AND ITS AFFILIATES,
+SUPPLIERS, OFFICERS, EMPLOYEES, AND AGENTS WILL NOT BE LIABLE FOR ANY INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY
+LOSS OF DATA, REVENUE, PROFITS, GOODWILL, OR BUSINESS OPPORTUNITY, ARISING FROM
+OR RELATED TO THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY. ANY DIFFERENT
+OR ADDITIONAL LIABILITY TERMS IN AN AUTHORIZED AGREEMENT CONTROL FOR THE
+PARTIES AND USE WITHIN THAT AGREEMENT’S SCOPE.
+
+11. GENERAL
+
+Nothing in these terms requires a restriction that mandatory applicable law
+does not permit. A failure to enforce a provision is not a waiver. If a
+provision is unenforceable, it will be enforced to the maximum lawful extent
+and the remaining provisions will continue in effect. Governing law, venue,
+dispute resolution, and any negotiated license grant are determined by the
+applicable Authorized Agreement; absent such an agreement, no authorization to
+use the Software is granted.
+
+Licensing and authorization requests: support@rapticore.com
+
+SPDX license identifier: LicenseRef-Rapticore-Proprietary

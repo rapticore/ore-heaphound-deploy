@@ -68,6 +68,13 @@ manifests, and operational evidence remain customer-owned.
 
 ## Deployment authorization
 
+Before downloading for use or planning a deployment, require the non-secret
+reference for an expressly authorized written Rapticore business agreement as
+defined by the release's proprietary `LICENSE`. Public access, credentials, or
+possession of a release kit is not authorization. Third-party component and
+model terms remain separate inventory and do not grant rights in Rapticore's
+first-party software.
+
 Starting the run permits all non-mutating preparation. The agent performs
 read-only discovery, artifact/model verification, Terraform planning, Helm
 rendering, and cost estimation without asking permission, then presents one

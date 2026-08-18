@@ -419,7 +419,11 @@ run "remediation_enabled_plan" {
       contains(one([
         for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
         statement if statement.sid == "PurgeExpiredQuarantineVersions"
-      ]).actions, "s3:DeleteObjectVersion")
+      ]).actions, "s3:DeleteObjectVersion") &&
+      toset(one([
+        for statement in data.aws_iam_policy_document.remediation_executor[0].statement :
+        statement if statement.sid == "ReconcileLegacyQuarantineVersions"
+      ]).actions) == toset(["s3:ListBucketVersions"])
     )
     error_message = "Source absence verification must be bucket-scoped; large-object snapshot/restore must permit bounded multipart cleanup; source mutation must preserve tags and never gain permanent version deletion."
   }

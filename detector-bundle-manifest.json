@@ -71,11 +71,11 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "92d9b2ae04dacf9fa4c8e9066f1f03bda67fad374beaf40669056ba08506dfbf"
+          "sha256": "6acf3cba35aedf9273be7af40945fc36458f13b4af1292add1dd293b02b0bac8"
         },
         {
           "path": "Dockerfile.tika",
-          "sha256": "742218deeb8e8b6782e2d7c349844ed2de40b9ea4bdfdf5aab4b7f505eb3f582"
+          "sha256": "2567916ed6d3bd860e5075579cd10cd1df07bb6acd2749672f064b68c3d58d37"
         },
         {
           "path": "cmd/scan-worker/main.go",
@@ -250,7 +250,7 @@
       "inputs": [
         {
           "path": "Dockerfile",
-          "sha256": "92d9b2ae04dacf9fa4c8e9066f1f03bda67fad374beaf40669056ba08506dfbf"
+          "sha256": "6acf3cba35aedf9273be7af40945fc36458f13b4af1292add1dd293b02b0bac8"
         },
         {
           "path": "internal/detection/candidate_policy.go",
@@ -278,7 +278,7 @@
       "runtime": "application-image-in-process",
       "source": "repository://internal/detection",
       "license": {
-        "expression": "Apache-2.0",
+        "expression": "LicenseRef-Rapticore-Proprietary",
         "review_required": false
       },
       "egress": "none",
@@ -382,7 +382,7 @@
       "runtime": "remediation-executor-source-local-ollama-0.32.0",
       "source": "repository://internal/redaction/llmvalidator",
       "license": {
-        "expression": "Apache-2.0",
+        "expression": "LicenseRef-Rapticore-Proprietary",
         "review_required": false
       },
       "egress": "none",

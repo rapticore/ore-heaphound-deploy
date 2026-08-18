@@ -352,13 +352,27 @@ data "aws_iam_policy_document" "remediation_executor" {
     resources = ["${aws_s3_bucket.redacted[0].arn}/redacted/*"]
   }
 
-  # Delete only the exact output version observed by rollback. The redactor
-  # supplies both VersionId and ETag, so this cannot become a bucket-wide
-  # cleanup capability or leave a sensitive noncurrent version behind.
+  # Delete only the exact output version observed by rollback. A VersionId is
+  # itself an immutable byte identity; S3 rejects combining it with If-Match.
   statement {
     sid       = "RemoveExactRedactedOutputVersions"
     actions   = ["s3:DeleteObject", "s3:DeleteObjectVersion"]
     resources = ["${aws_s3_bucket.redacted[0].arn}/redacted/*"]
+  }
+
+  # Legacy snapshot references predate persisted version IDs. When a delete
+  # marker hides the key, bounded exact-prefix version listing is the only way
+  # to distinguish already-purged data from one recoverable retained version.
+  statement {
+    sid       = "ReconcileLegacyQuarantineVersions"
+    actions   = ["s3:ListBucketVersions"]
+    resources = [aws_s3_bucket.quarantine[0].arn]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["quarantine/*"]
+    }
   }
 
   # Rollback snapshots expire independently of rollback. Versioned S3 deletion

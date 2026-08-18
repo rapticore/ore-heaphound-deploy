@@ -1,0 +1,30 @@
+Ore HeapHound Sensitive Data Discovery & Remediation Platform
+Copyright © 2026 Rapticore, Inc. All rights reserved.
+
+RAPTICORE PROPRIETARY AND CONFIDENTIAL
+
+Rapticore's first-party software and materials are governed by the proprietary
+terms in LICENSE. No right to use, copy, modify, create derivative works from,
+disclose, distribute, or otherwise exploit those materials is granted except
+under an expressly authorized written Rapticore business agreement.
+
+This product includes third-party software. Each dependency remains subject to
+its own license. Go module dependency metadata is recorded in go.mod and go.sum;
+release automation produces the corresponding machine-readable inventory.
+
+The production image bundles MongoDB Kingfisher v1.106.0 as a separate
+subprocess. Kingfisher is distributed under the Apache License 2.0; its
+upstream notices remain applicable.
+
+The remediation binary embeds Klippa go-pdfium v1.19.4 (MIT), which ships a
+compiled PDFium WebAssembly module, executed by the wazero runtime (Apache-2.0)
+and pooled via jolestar/go-commons-pool (Apache-2.0). The compiled PDFium module
+is Chromium/PDFium, licensed under the BSD 3-Clause License (Copyright The
+PDFium Authors; Copyright The Chromium Authors), and statically links additional
+third-party libraries including FreeType (under the FreeType License / FTL,
+which requires acknowledgment: "Portions of this software are copyright
+The FreeType Project (www.freetype.org). All rights reserved."), libjpeg-turbo,
+zlib, libpng, lcms2, and OpenJPEG. Their upstream copyright, license, and
+third-party notices remain applicable and are included in the release
+dependency inventory. No copyleft (GPL/AGPL/LGPL) license is embedded, shipped,
+or invoked (invariant #7).

@@ -7,11 +7,13 @@ customer-owned EKS cluster. It is not an upgrade, repair, reconciliation,
 migration of an existing Ore Heaphound deployment, or authorization to touch
 another Ore Heaphound environment.
 
-This directive was reviewed against the public
-`v0.1.0-develop.23.30` deployment kit on 2026-08-16. That release contains all
-published changes through source commit
-`47a6ab996a3beea531c5cfd777c903c9c3b70eec`, including 147 database
-migrations ending at `0147_scan_stalled_notification_lookup.sql`.
+This directive is the release-bound fresh-install contract for
+`v0.1.0-develop.23.33`, reviewed on 2026-08-18. That release must contain 164
+contiguous database migrations ending at
+`0164_verification_preview_grants_cleanup_index.sql`. It is not deployable
+until the public release is published, the tagged source workflow succeeds,
+and every coordinate derived from the signed release manifest verifies. Before
+then, return `BLOCKED_RELEASE_NOT_PUBLISHED`.
 
 The release manifest is authoritative for source, image, chart, archive,
 signature, provenance, SBOM, detector, prerequisite, model, capability, and
@@ -22,6 +24,10 @@ used for a fresh installation.
 
 Use this directive only when all of the following are true:
 
+- the installation is covered by an Authorized Agreement as defined in the
+  release's Rapticore proprietary `LICENSE`, and
+  the decision packet records its non-secret business-authorization reference
+  separately from the deployment change reference;
 - exactly one EKS installation mode is selected: `new_eks` or `existing_eks`;
 - the deployment ID, application database/schema, namespace, Helm releases,
   operator/generated secrets, evidence roots, and application DNS names are
@@ -29,12 +35,20 @@ Use this directive only when all of the following are true:
 - no application data, scan, queue, migration ledger, generated Secret, or
   retained evidence exists for the target;
 - the customer selected `operation: deploy` and `deployment_action: new`; and
-- the release is at least `v0.1.0-develop.23.30` and contains every invariant
+- the release is exactly `v0.1.0-develop.23.33` and contains every invariant
   listed under **Fresh-release invariants** below.
 
 If any resource or state record for the proposed deployment already exists,
 stop and classify the operation as `resume`, `upgrade`, or `collision`. Never
 adopt, import, overwrite, rename, or destroy it under this directive.
+
+Public repository or artifact access, a deployment request, credentials, or
+possession of a release kit does not itself grant permission to use the
+software, derive from it, or deploy it. If the Rapticore business authorization
+cannot be established without disclosing confidential agreement terms, retain
+only its approved reference and return `BLOCKED_RAPTICORE_AUTHORIZATION`.
+Third-party model license metadata remains signed release inventory and does
+not replace or broaden that first-party authorization.
 
 An `existing_eks` cluster, its VPC, node infrastructure, shared controllers,
 and customer platform services may predate this installation. They remain
@@ -72,10 +86,11 @@ module.
 
 ## Qualification status
 
-As reviewed, `v0.1.0-develop.23.30` is a public prerelease. Its signed release
-manifest and detector manifest both say `not_qualified`. It may be installed
-in a new customer-owned environment for rehearsal, but neither the tag nor
-evidence produced from it may be relabeled as a qualified stable release.
+`v0.1.0-develop.23.33` is a develop prerelease candidate. After publication,
+its signed release manifest and detector manifest are expected to remain
+`not_qualified`. It may be installed in a new customer-owned environment for
+rehearsal only after the complete public trust gate passes, but neither the tag
+nor evidence produced from it may be relabeled as a qualified stable release.
 
 For `mode: stable_qualification`, require an immutable signed stable candidate
 whose detector bundle is already promoted under the current two-person
@@ -92,23 +107,23 @@ Customer deployment trust begins at the signed public release. Do not request
 access to the private source repository or use a private or dirty source
 checkout as deployment input. Work from a newly extracted public release kit
 and locally verified chart packages in a customer-controlled private work
-area.
+area. Artifact verification establishes integrity, not a public license; the
+Rapticore authorization gate above remains mandatory.
 
-For the reviewed release, require at least these public coordinates before
-planning:
+For this release, derive every mutable-to-build coordinate from the verified
+public release rather than copying a value from an earlier release or this
+document:
 
-| Coordinate | Required value |
+| Coordinate | Required derivation |
 |---|---|
-| Release tag | `v0.1.0-develop.23.30` |
-| Source commit bound by the manifest | `47a6ab996a3beea531c5cfd777c903c9c3b70eec` |
-| Release-manifest SHA-256 | `50c12150059b485983c391cee0a7b179df47b177172dfd5616674cd926b6622f` |
-| Customer-kit SHA-256 | `d4fee8adfb89b9a474180ec2f109941ca99ca43856ec3ff81ca22a848bc3a19b` |
-| Application image digest | `sha256:f3c64a548bf4812af9ef13037ac251f1845497deac8b983edb0c98578005ada9` |
-| Extraction image digest | `sha256:54cc906d274188e12ed117e6428d13275aaff0407cabe65f3b347aa636339da7` |
-| Control chart OCI digest | `sha256:1d2d0354df5628b2701a3166beba4a8e91254403ed8018a10647a0694f302db8` |
-| Admission chart OCI digest | `sha256:bdc15656725a21fed3ad4328d6d6772fc573c424265338372d921c9828865ced` |
-| Execution chart OCI digest | `sha256:ef08dc436da563a0620bb4f8a974426219a2c98371c5e45ca594bb502865e74b` |
-| Detector-manifest SHA-256 | `7656ae355ee024ce1d382c036ede51469120c27b7e311e62f1311c33917a0c8c` |
+| Release tag | Exactly `v0.1.0-develop.23.33`; annotated, immutable, published, non-draft, and non-withdrawn |
+| Source commit | The 40-character commit in the signed manifest; it must equal the peeled annotated source-tag target |
+| Release-manifest SHA-256 | Hash the downloaded manifest after its Sigstore bundle verifies against exact `.23.33` `release.yml` identity |
+| Customer-kit SHA-256 | The public checksum asset and signed kit bundle; inner and outer manifest bytes must match |
+| Application and extraction images | Exact references and digests from the signed manifest; verify both signed multi-platform indexes and attestations |
+| Control, admission, and execution charts | Exact OCI and package digests from the signed manifest; pulled package bytes must match |
+| Detector manifest | Exact filename and SHA-256 from the signed manifest; do not assume the preceding release's detector digest |
+| Database inventory | Exactly 164 entries, `0001_core_asset_and_work_model.sql` through `0164_verification_preview_grants_cleanup_index.sql` |
 
 Verify the release-manifest bundle, customer-kit checksum and bundle, image
 signatures, OCI chart signatures, pulled chart package checksums, parent-index
@@ -127,7 +142,7 @@ silently substitute it after approval.
 
 The effective installation configuration must provide all of the following:
 
-- all 147 `.23.30` migrations are present, contiguous, checksum-bearing, and
+- all 164 `.23.33` migrations are present, contiguous, checksum-bearing, and
   applied by the signed migration Job to the empty database;
 - new scans pin `controlPlane.occurrenceStorageVersion: 2` from their creation;
 - format-range sharding v2 remains enabled for large newline-oriented data;
@@ -137,6 +152,33 @@ The effective installation configuration must provide all of the following:
 - extraction, Presidio, contextual inference, worker-pool, fair-share
   capacity, stalled-scan diagnosis, bounded cancellation, notification, and
   quarantine-finalization behavior come from one coordinated release;
+- pause and cancel use bounded lifecycle-lock retries and durable off-row
+  `scan_control_requests` intent when discovery holds the scan row, and a
+  stalled open discovery reports the non-sensitive `discovery_stalled` reason;
+- `remediation.intelligenceGoals.maxAssets: 3000000` is the deployment ceiling
+  for the measured estate, remains below the application hard maximum of
+  5,000,000, and is bound into every immutable intelligence-goal policy;
+- legacy mass-remediation group correlation is bounded by page and may degrade
+  only its review metrics: the authoritative object plan continues while
+  `group_metrics_complete: false`, skipped-page count, and the stable
+  `page_group_correlation_timeout` reason remain visible;
+- remediation materialization persists its keyset cursor, counters, success
+  streak, timeout count, adaptive page size, and last-progress time in the same
+  transaction as every committed page; a restart, pause, or retry resumes the
+  same request without rescanning completed roots;
+- migrations `0158` and `0159` provide indexed scan-local locatability for
+  both occurrence storage generations, so materialization uses one indexed
+  validity pass rather than repeatedly parsing all occurrence JSONB;
+- classification retention is available only through governed preview/purge
+  lifecycle policy, with sparse scan/asset tombstones and immutable summaries,
+  manifests, audit, approvals, remediation evidence, and the final successful
+  verification scan retained;
+- rollback-snapshot purge has its own bounded attempt/backoff state and exact
+  version deletion; a terminal provider failure becomes visible operator work
+  instead of an unbounded executor loop;
+- the retention-rank, orphan-group, and preview-grant cleanup indexes from
+  migrations `0162` through `0164` are present before lifecycle purge is ever
+  enabled;
 - the production dashboard refresh remains disabled until its estate-sized
   refresh is separately qualified for the new target;
 - lifecycle remains disabled in preview posture, occurrence deletion remains
@@ -146,7 +188,7 @@ The effective installation configuration must provide all of the following:
 - raw-value verification, if selected, uses the dedicated verification-preview
   workload and read identity, not the ordinary API identity.
 
-The packaged `.23.30` `values/central-eks.yaml` does not select occurrence
+The packaged `.23.33` `values/central-eks.yaml` does not select occurrence
 storage v2. For this fresh installation only, the private customer overlay
 applied after `values/central-eks.yaml` must contain this release-bound block:
 
@@ -166,6 +208,10 @@ lifecycle:
   purgeAcknowledged: false
   categories:
     occurrences: false
+    classification: false
+    projections: false
+    orphanGroups: false
+    previewGrants: false
     analysisReceipts: true
     workUnits: true
     heartbeats: false
@@ -175,6 +221,10 @@ lifecycle:
     analysisReceipts: 25000
     workUnits: 50000
   maxBatches: 100
+
+remediation:
+  intelligenceGoals:
+    maxAssets: 3000000
 ```
 
 Bind the complete private overlay and its SHA-256 to the decision packet. Do
@@ -238,6 +288,9 @@ existing cluster, discover its exact ARN/name, Region, kube context, platform
 owner, and shared-workload status instead of asking the customer to retype
 them. Never ask for credentials, secret values, YAML edits, versions, names,
 digests, model files, or values that can be discovered or safely generated.
+The Rapticore business-authorization reference is not a generated deployment
+default: discover it from the approved customer/change record or include it in
+the single compact question, and stop if no authorized reference exists.
 
 For `develop_rehearsal`, resolve qualification intent to `rehearsal_only`. For
 `stable_qualification`, resolve it to `qualify_when_eligible` and include the
@@ -292,7 +345,7 @@ application prerequisite or Kubernetes mutation:
 
 1. require the cluster to be `ACTIVE`, bind its exact ARN/name/Region/context,
    and require the Kubernetes minor version supported by the signed
-   `prerequisites.lock.json` (1.34 for `.23.30`);
+   `prerequisites.lock.json` (1.34 for `.23.33`);
 2. inventory EKS add-ons, CNI/network-policy enforcement, Pod Identity or IRSA,
    DNS, metrics API, admission webhooks, storage drivers, load-balancer
    controller, observability, and cluster/node autoscaling;
@@ -452,6 +505,8 @@ or occurrence purge is true.
 
 The packet must contain:
 
+- the separate non-secret Rapticore business-authorization reference and the
+  release-license digest it was checked against;
 - resolved specification digest and sanitized guided answers;
 - exact release, manifest, kit, image, chart, detector, model, prerequisite,
   capability, and migration identities;
@@ -487,8 +542,9 @@ mutate the target without an unambiguous approval bound to its SHA-256.
 Perform these common steps first:
 
 1. reverify the same identity, Region, release withdrawal status, kit bytes,
-   private input digests, EKS mode/identity, state keys, collisions, shared-
-   ownership inventory, and cost ceiling; and
+   proprietary-license digest, business-authorization reference, private input
+   digests, EKS mode/identity, state keys, collisions, shared-ownership
+   inventory, and cost ceiling; and
 2. apply only the exact customer bootstrap/application-prerequisite saved
    plans approved for the selected lane, then verify outputs without reading
    secret values.
@@ -570,9 +626,13 @@ customer's selected readiness status. At minimum prove:
 - the application, web, API, migration, database, extraction, Presidio,
   contextual model, verification-preview, worker, KEDA, and admission paths are
   healthy with stable restart counts;
-- the migration ledger has exactly the signed release inventory—147 entries
-  ending at `0147_scan_stalled_notification_lookup.sql` for `.23.30`—with the
+- the migration ledger has exactly the signed release inventory—164 entries
+  ending at `0164_verification_preview_grants_cleanup_index.sql` for `.23.33`—with the
   expected checksums;
+- migrations `0158`, `0159`, `0162`, `0163`, and `0164` are present as the
+  signed runner's non-transactional concurrent-index steps, while migrations
+  `0157`, `0160`, and `0161` are present as transactional schema steps; do not
+  combine, reorder, skip, or run them manually;
 - the effective API environment selects occurrence storage v2, and a new
   synthetic scan records v2 without creating legacy-only occurrence rows;
 - lifecycle is absent/disabled, occurrence purge is false, remediation writes
@@ -587,6 +647,22 @@ customer's selected readiness status. At minimum prove:
 - worker heartbeats, database demand, KEDA targets, live replicas, processes,
   and busy slots agree; positive compatible demand with all slots idle is a
   failed capacity gate, not a successful scale-to-zero state;
+- pause and cancel complete synchronously or leave one replay-safe durable
+  request that the reconciler applies; a deliberately stalled synthetic
+  discovery reports `discovery_stalled` without leaking source details;
+- remediation materialization resumes from its persisted cursor after a
+  controlled restart, advances monotonic counters/last-progress time, reports
+  materialization and execution retries separately, and stops for operator
+  attention after repeated one-root timeouts;
+- the effective intelligence goal ceiling is 3,000,000 assets and a bounded
+  group-correlation timeout preserves the complete object plan while exposing
+  incomplete review metrics and the stable skipped-page reason;
+- the lifecycle command starts with classification, projections, orphan-group,
+  and preview-grant purge categories disabled; a separately approved preview
+  accurately reports their candidates before any purge-mode enablement;
+- versioned S3 rollback deletes bind only the exact output version, never an
+  invalid `VersionId` plus `If-Match` request shape, and a terminal purge
+  failure releases its lease while retaining bounded operator-visible state;
 - the scan worker can use native secrets, Presidio, and the exact contextual
   model identities recorded by the signed detector bundle;
 - no raw values, tokens, object names, or customer content appear in logs,

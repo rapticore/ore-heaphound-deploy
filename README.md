@@ -5,6 +5,11 @@ accounts and Kubernetes clusters. Rapticore publishes signed containers and
 Helm charts but does not host the runtime, control plane, customer data,
 credentials, or model weights.
 
+Public access verifies delivery and provenance; it does not grant a license.
+Use or deployment requires an expressly authorized written Rapticore business
+agreement under the included proprietary [LICENSE](LICENSE). Third-party
+components remain governed by their own notices.
+
 Start with [SELF_HOSTED.md](SELF_HOSTED.md). For the customer-owned staging
 walkthrough and the evidence required before a release can be called qualified,
 use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
@@ -17,7 +22,9 @@ cluster or a compatible existing customer-owned EKS cluster—give the agent
 controlling directive. It covers the current cumulative release posture,
 proves the application target is empty, separates the two infrastructure
 ownership lanes, and prevents upgrade-only operations from being applied to a
-fresh installation.
+fresh installation. The `.23.33` directive requires the signed migration Job
+to initialize an empty database through all 164 migrations ending at `0164`;
+do not deploy that candidate until its public signed release is available.
 For the explicitly authorized `v0.1.0-develop.23.4` production upgrade, give
 the deployment agent
 [DEPLOYMENT_AGENT_V23_4.md](DEPLOYMENT_AGENT_V23_4.md) as the controlling
