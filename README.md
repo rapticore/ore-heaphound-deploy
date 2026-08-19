@@ -10,7 +10,17 @@ Use or deployment requires an expressly authorized written Rapticore business
 agreement under the included proprietary [LICENSE](LICENSE). Third-party
 components remain governed by their own notices.
 
-Start with [SELF_HOSTED.md](SELF_HOSTED.md). For the customer-owned staging
+For a customer asking an installation agent to create a brand-new environment,
+start with
+[CUSTOMER_INSTALL_AGENT.md](CUSTOMER_INSTALL_AGENT.md). It is the concise
+customer-facing handoff contract: the agent performs read-only preparation,
+presents one digest-bound approval packet, follows the release-bound fresh
+install directive, and returns a resumable, sanitized result. It deliberately
+routes existing deployments to the upgrade runbook instead of adopting or
+overwriting them.
+
+For a manual operator walkthrough, start with
+[SELF_HOSTED.md](SELF_HOSTED.md). For the customer-owned staging
 walkthrough and the evidence required before a release can be called qualified,
 use [STAGING_QUALIFICATION.md](STAGING_QUALIFICATION.md).
 For the streamlined production endpoint, resilience, backup, observability,

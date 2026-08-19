@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "version": "v0.1.0-develop.23.33",
+  "version": "v0.1.0-develop.23.34",
   "source": {
     "repository": "rapticore/ore_heaphound",
-    "commit": "75002800f1c13f622dc5bf3fa3002b7638c6299b"
+    "commit": "b439bc47bcbd5935a034d4de47f7bf7218c30697"
   },
   "images": [
     {
       "component": "application",
       "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound",
-      "digest": "sha256:c4b846130235ece607a45b697e0f6921bdecdeacd7544d8e46056da61b0e3bcf",
+      "digest": "sha256:3d099a10c1ecb1b6cb697e7a41a4874dc4cae4d2f34256a1f1a0ce18ea68b7fa",
       "signature": "sigstore-keyless",
       "attestations": [
         "slsa-provenance",
@@ -19,7 +19,7 @@
     {
       "component": "extraction",
       "reference": "public.ecr.aws/n7r3j2c0/ore-heaphound-tika",
-      "digest": "sha256:0375459a82225f9dce96b7f3102cdf709491eac4e2faff97e0ba6f48170e763b",
+      "digest": "sha256:4cdfe9cae85cc2fde8c7125edaad425af1d306c17d0cb9069197f0a072db4dd2",
       "signature": "sigstore-keyless",
       "attestations": [
         "slsa-provenance",
@@ -30,16 +30,16 @@
   "artifacts": {
     "helm_charts": [
       {
-        "name": "sddp-0.1.0-develop.23.33.tgz",
-        "sha256": "1476ec6d1774ae4b551cce690b77bb7e276e94b64c369333c42e3a37afb2fd0a"
+        "name": "sddp-0.1.0-develop.23.34.tgz",
+        "sha256": "d6f2c238e3a3b7ee45fefa56b5c9014ac0b5461ca950dc796807ba123c462fc0"
       },
       {
-        "name": "sddp-admission-0.1.0-develop.23.33.tgz",
-        "sha256": "77f67a5bb5e94eb35def3cb3ba37ded154f7bdeec7b5e85a2b3d2b76f78bcafd"
+        "name": "sddp-admission-0.1.0-develop.23.34.tgz",
+        "sha256": "ed9f714ab1fd19bd2f21c3c062c0ef459fbf9384dfc5ecfc3baf4baf561a13cf"
       },
       {
-        "name": "sddp-execution-plane-0.1.0-develop.23.33.tgz",
-        "sha256": "0ebb6752418fc87b22ae9d743492d1e7b5b3ae1f9c008f8acb663c805e4e6c2f"
+        "name": "sddp-execution-plane-0.1.0-develop.23.34.tgz",
+        "sha256": "2c90649bdedfb93d16a98c284d997331af467c4cbd3af5c729a2bfbdfb26a2bb"
       }
     ],
     "capability_catalog": {
@@ -49,7 +49,7 @@
     },
     "detector_bundle": {
       "name": "detector-bundle-manifest.json",
-      "sha256": "c486076244d4abce10f55cc6e0db8bf794b964393fcb2ca2c08f8958cfc8ef91",
+      "sha256": "16b5ac0a0706baa33c15680aa371b76b0ecbce5ddc5f9af46ef5ca29b39ef812",
       "schema_version": 1,
       "profile_id": "production-v1",
       "quality_status": "not_qualified"
@@ -57,12 +57,12 @@
   },
   "database": {
     "first_migration": "0001_core_asset_and_work_model.sql",
-    "last_migration": "0164_verification_preview_grants_cleanup_index.sql",
-    "migration_count": 164
+    "last_migration": "0166_materialized_plan_v3.sql",
+    "migration_count": 166
   },
   "build": {
     "system": "github-actions",
-    "workflow_run": "32123361245/1",
+    "workflow_run": "32210158509/1",
     "manifest_signature": "sigstore-keyless-bundle"
   },
   "qualification": {

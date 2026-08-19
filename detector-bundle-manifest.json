@@ -79,7 +79,7 @@
         },
         {
           "path": "cmd/scan-worker/main.go",
-          "sha256": "2af1a9a7aa7acf515c35728b6480152d5192e2008eba99534b13713ba9aef108"
+          "sha256": "658cd500c9b3d9d9d7f59380861ca5a734cb0b0b6c6da2ab5e8d710a0cde844c"
         },
         {
           "path": "cmd/tika-runtime/main.go",
@@ -139,7 +139,7 @@
         },
         {
           "path": "internal/queue/queue.go",
-          "sha256": "e0e48833be7ba8b3464e66d076859c90db02b48a23923a673875304bcd79f73d"
+          "sha256": "3733a071dbd827e1f49d79f2f0681146ea6be2d0f5362bcd1229f74931baa9ac"
         },
         {
           "path": "internal/redaction/redaction.go",
@@ -367,7 +367,7 @@
         },
         {
           "path": "internal/detection/presidio/presidio.go",
-          "sha256": "0c106542d5135d8dfaf7972a3d56e724193c2a0a6759fc5967c44a8e16fbb4a3"
+          "sha256": "ba245fd5f4f08c35977134c1234bac79b60fe898b0c4e8cd19e19e3815d87f58"
         }
       ],
       "limitations": [
