@@ -18,6 +18,15 @@
       "reason_code": "kyverno_multiple_identities_unsupported",
       "reason": "The admission chart combined the candidate and rollback workflow subjects in one keyless attestor, which the locked Kyverno verifier rejects before either signed image can be admitted.",
       "replacement": "v0.1.0-develop.23.2"
+    },
+    {
+      "tag": "v0.1.0-develop.23.35",
+      "tag_object": "0455c3296faa1659725b53ba46fe7bba10d04877",
+      "source_commit": "0ebf8d3927233b507a69aa3422736550ab244406",
+      "status": "withdrawn",
+      "reason_code": "capacity_estimate_range_constraint_ordering",
+      "reason": "Migration 0167 installs a NOT VALID range constraint before backfilling its zero-default range columns. PostgreSQL enforces that constraint on the migration's first metadata UPDATE, causing SQLSTATE 23514 for historical positive capacity estimates before any candidate migration commits.",
+      "replacement": "v0.1.0-develop.23.36"
     }
   ]
 }

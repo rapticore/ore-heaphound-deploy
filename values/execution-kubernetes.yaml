@@ -3,7 +3,7 @@ production: true
 
 image:
   repository: public.ecr.aws/n7r3j2c0/ore-heaphound
-  digest: sha256:8f6ede9fbc752e30e03aa6b46b4b8b4261a9e9233b14695d869ef069ccbb1418
+  digest: sha256:d21eada31eb03e1e27cf5d7759d940bee263ae74eb864bb94f8767c4fd8e6a80
 
 gateway:
   target: REPLACE_GATEWAY_HOST:443
@@ -12,7 +12,7 @@ gateway:
 
 pool:
   id: kubernetes-prod
-  buildDigest: sha256:8f6ede9fbc752e30e03aa6b46b4b8b4261a9e9233b14695d869ef069ccbb1418
+  buildDigest: sha256:d21eada31eb03e1e27cf5d7759d940bee263ae74eb864bb94f8767c4fd8e6a80
   detectorBundle: native:builtin-v12|kingfisher:1.106.0|presidio:2.2.362|default-recognizers|spacy-en_core_web_lg|contextual:qwen2.5:7b-instruct|phi-span-prompt:v5|model:sha256:845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e
   detectorManifestDigest: sha256:a51a2e1ffa105eb330616331cef36a27d5a42eaaab80ad77ade6b03319e7bbe9
 
@@ -27,7 +27,7 @@ extraction:
     enabled: true
     image:
       repository: public.ecr.aws/n7r3j2c0/ore-heaphound-tika
-      digest: sha256:85c38f506605ad03aef8eac51dd3f378701323f61579822e8ac11b1f157b294a
+      digest: sha256:189f8eeeb58904c76fe6413db465e32cf89e3be903d4e093b095c24b68f5ae40
 
 detection:
   contextual:
