@@ -32,8 +32,8 @@ cluster or a compatible existing customer-owned EKS cluster—give the agent
 controlling directive. It covers the current cumulative release posture,
 proves the application target is empty, separates the two infrastructure
 ownership lanes, and prevents upgrade-only operations from being applied to a
-fresh installation. The `.23.33` directive requires the signed migration Job
-to initialize an empty database through all 164 migrations ending at `0164`;
+fresh installation. The `.23.35` directive requires the signed migration Job
+to initialize an empty database through all 183 migrations ending at `0183`;
 do not deploy that candidate until its public signed release is available.
 For the explicitly authorized `v0.1.0-develop.23.4` production upgrade, give
 the deployment agent

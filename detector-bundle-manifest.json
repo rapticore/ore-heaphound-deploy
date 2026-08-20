@@ -393,7 +393,7 @@
         },
         {
           "path": "internal/redaction/llmvalidator/validator.go",
-          "sha256": "61a51545f1d4346e8d23be86a9f80edd109ac962bd3b7a59428804e5d8218800"
+          "sha256": "eb537f6accea553318eb2afde7b7d67cc84e69a59b4dafa8e5a2a17eee5faf9a"
         },
         {
           "path": "internal/redaction/profile.go",

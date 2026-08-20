@@ -8,9 +8,9 @@ migration of an existing Ore Heaphound deployment, or authorization to touch
 another Ore Heaphound environment.
 
 This directive is the release-bound fresh-install contract for
-`v0.1.0-develop.23.33`, reviewed on 2026-08-18. That release must contain 164
+`v0.1.0-develop.23.35`, reviewed on 2026-08-19. That release must contain 183
 contiguous database migrations ending at
-`0164_verification_preview_grants_cleanup_index.sql`. It is not deployable
+`0183_remediation_request_groups_group_index.sql`. It is not deployable
 until the public release is published, the tagged source workflow succeeds,
 and every coordinate derived from the signed release manifest verifies. Before
 then, return `BLOCKED_RELEASE_NOT_PUBLISHED`.
@@ -35,7 +35,7 @@ Use this directive only when all of the following are true:
 - no application data, scan, queue, migration ledger, generated Secret, or
   retained evidence exists for the target;
 - the customer selected `operation: deploy` and `deployment_action: new`; and
-- the release is exactly `v0.1.0-develop.23.33` and contains every invariant
+- the release is exactly `v0.1.0-develop.23.35` and contains every invariant
   listed under **Fresh-release invariants** below.
 
 If any resource or state record for the proposed deployment already exists,
@@ -86,7 +86,7 @@ module.
 
 ## Qualification status
 
-`v0.1.0-develop.23.33` is a develop prerelease candidate. After publication,
+`v0.1.0-develop.23.35` is a develop prerelease candidate. After publication,
 its signed release manifest and detector manifest are expected to remain
 `not_qualified`. It may be installed in a new customer-owned environment for
 rehearsal only after the complete public trust gate passes, but neither the tag
@@ -116,14 +116,14 @@ document:
 
 | Coordinate | Required derivation |
 |---|---|
-| Release tag | Exactly `v0.1.0-develop.23.33`; annotated, immutable, published, non-draft, and non-withdrawn |
+| Release tag | Exactly `v0.1.0-develop.23.35`; annotated, immutable, published, non-draft, and non-withdrawn |
 | Source commit | The 40-character commit in the signed manifest; it must equal the peeled annotated source-tag target |
-| Release-manifest SHA-256 | Hash the downloaded manifest after its Sigstore bundle verifies against exact `.23.33` `release.yml` identity |
+| Release-manifest SHA-256 | Hash the downloaded manifest after its Sigstore bundle verifies against exact `.23.35` `release.yml` identity |
 | Customer-kit SHA-256 | The public checksum asset and signed kit bundle; inner and outer manifest bytes must match |
 | Application and extraction images | Exact references and digests from the signed manifest; verify both signed multi-platform indexes and attestations |
 | Control, admission, and execution charts | Exact OCI and package digests from the signed manifest; pulled package bytes must match |
 | Detector manifest | Exact filename and SHA-256 from the signed manifest; do not assume the preceding release's detector digest |
-| Database inventory | Exactly 164 entries, `0001_core_asset_and_work_model.sql` through `0164_verification_preview_grants_cleanup_index.sql` |
+| Database inventory | Exactly 183 entries, `0001_core_asset_and_work_model.sql` through `0183_remediation_request_groups_group_index.sql` |
 
 Verify the release-manifest bundle, customer-kit checksum and bundle, image
 signatures, OCI chart signatures, pulled chart package checksums, parent-index
@@ -142,7 +142,7 @@ silently substitute it after approval.
 
 The effective installation configuration must provide all of the following:
 
-- all 164 `.23.33` migrations are present, contiguous, checksum-bearing, and
+- all 183 `.23.35` migrations are present, contiguous, checksum-bearing, and
   applied by the signed migration Job to the empty database;
 - new scans pin `controlPlane.occurrenceStorageVersion: 2` from their creation;
 - format-range sharding v2 remains enabled for large newline-oriented data;
@@ -179,6 +179,24 @@ The effective installation configuration must provide all of the following:
 - the retention-rank, orphan-group, and preview-grant cleanup indexes from
   migrations `0162` through `0164` are present before lifecycle purge is ever
   enabled;
+- capacity estimates disclose their measured or fallback basis, scan state,
+  discovery, and processing intervals remain independently visible, and a
+  negative aggregate counter raises the release alert rather than being
+  hidden by a non-negative per-shard assumption;
+- frozen triage selections are content-addressed, immutable after resolution,
+  and drive bounded durable disposition and selection-backed remediation by
+  reference rather than by an unbounded request body;
+- group remediation status is projected from authoritative remediation rows,
+  and source-reducing remediation schedules an exact-object source refresh
+  with bounded, operator-visible retry state instead of leaving stale asset
+  versions silently reusable;
+- redaction exemptions, when expressly selected, remain exact
+  `(entity_type, evidence_hmac)` policy exemptions: values are never stored,
+  the set is approval-bound, disclosure is signed, HHS Safe Harbor refuses
+  retained identifiers, and enrollment remains disabled by default;
+- Presidio and the signed contextual LLM remain enabled and qualified for the
+  release target; an exemption must never be implemented by disabling either
+  classifier or redactor;
 - the production dashboard refresh remains disabled until its estate-sized
   refresh is separately qualified for the new target;
 - lifecycle remains disabled in preview posture, occurrence deletion remains
@@ -188,7 +206,7 @@ The effective installation configuration must provide all of the following:
 - raw-value verification, if selected, uses the dedicated verification-preview
   workload and read identity, not the ordinary API identity.
 
-The packaged `.23.33` `values/central-eks.yaml` does not select occurrence
+The packaged `.23.35` `values/central-eks.yaml` does not select occurrence
 storage v2. For this fresh installation only, the private customer overlay
 applied after `values/central-eks.yaml` must contain this release-bound block:
 
@@ -196,6 +214,8 @@ applied after `values/central-eks.yaml` must contain this release-bound block:
 controlPlane:
   occurrenceStorageVersion: 2
   cancellationBatch: 1000
+  redactionExemptions:
+    enrollmentEnabled: false
   dashboardRefresh:
     enabled: false
   readinessProbe:
@@ -345,7 +365,7 @@ application prerequisite or Kubernetes mutation:
 
 1. require the cluster to be `ACTIVE`, bind its exact ARN/name/Region/context,
    and require the Kubernetes minor version supported by the signed
-   `prerequisites.lock.json` (1.34 for `.23.33`);
+   `prerequisites.lock.json` (1.34 for `.23.35`);
 2. inventory EKS add-ons, CNI/network-policy enforcement, Pod Identity or IRSA,
    DNS, metrics API, admission webhooks, storage drivers, load-balancer
    controller, observability, and cluster/node autoscaling;
@@ -626,13 +646,15 @@ customer's selected readiness status. At minimum prove:
 - the application, web, API, migration, database, extraction, Presidio,
   contextual model, verification-preview, worker, KEDA, and admission paths are
   healthy with stable restart counts;
-- the migration ledger has exactly the signed release inventory—164 entries
-  ending at `0164_verification_preview_grants_cleanup_index.sql` for `.23.33`—with the
+- the migration ledger has exactly the signed release inventory—183 entries
+  ending at `0183_remediation_request_groups_group_index.sql` for `.23.35`—with the
   expected checksums;
-- migrations `0158`, `0159`, `0162`, `0163`, and `0164` are present as the
+- migrations `0158`, `0159`, `0162`, `0163`, `0164`, `0169`, `0171`, `0176`,
+  `0178`, `0181`, and `0183` are present as the
   signed runner's non-transactional concurrent-index steps, while migrations
-  `0157`, `0160`, and `0161` are present as transactional schema steps; do not
-  combine, reorder, skip, or run them manually;
+  `0157`, `0160`, `0161`, `0167`, `0168`, `0170`, `0172` through `0175`,
+  `0177`, `0179`, `0180`, and `0182` are present as transactional schema steps;
+  do not combine, reorder, skip, or run them manually;
 - the effective API environment selects occurrence storage v2, and a new
   synthetic scan records v2 without creating legacy-only occurrence rows;
 - lifecycle is absent/disabled, occurrence purge is false, remediation writes
@@ -650,6 +672,19 @@ customer's selected readiness status. At minimum prove:
 - pause and cancel complete synchronously or leave one replay-safe durable
   request that the reconciler applies; a deliberately stalled synthetic
   discovery reports `discovery_stalled` without leaking source details;
+- scan progress identifies the capacity-estimate basis and reports independent
+  state, discovery, and processing durations without presenting a fallback as
+  a measurement;
+- a frozen triage selection resolves and digests deterministically, a bounded
+  disposition resumes after interruption, and a selection-backed remediation
+  cannot widen after approval;
+- an expressly enabled test exemption retains only its exact class-scoped
+  fingerprint, is disclosed by residual verification and the signed report,
+  and cannot be used with HHS Safe Harbor to claim retained identifiers were
+  removed; enrollment remains disabled when that test was not selected;
+- a source-reducing synthetic remediation either creates the exact-object
+  refresh scan or surfaces its bounded retry reason, and the refreshed asset
+  version prevents stale evidence from being reused;
 - remediation materialization resumes from its persisted cursor after a
   controlled restart, advances monotonic counters/last-progress time, reports
   materialization and execution retries separately, and stops for operator

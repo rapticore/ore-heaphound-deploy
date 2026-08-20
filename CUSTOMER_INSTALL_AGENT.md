@@ -55,11 +55,11 @@ secret-upgrade, repair, migration-replay, or rollback procedures on an empty
 target.
 
 The current reviewed fresh-install baseline is
-`v0.1.0-develop.23.33`. It is a develop prerelease, not a qualified stable
+`v0.1.0-develop.23.35`. It is a develop prerelease, not a qualified stable
 release. Derive its source commit, image digests, chart digests, detector and
 model identities, archive checksums, and signer identities from its verified
-signed manifest. The migration inventory must contain exactly 164 contiguous
-entries ending at `0164_verification_preview_grants_cleanup_index.sql`. A
+signed manifest. The migration inventory must contain exactly 183 contiguous
+entries ending at `0183_remediation_request_groups_group_index.sql`. A
 newer release requires a newly reviewed release-bound fresh-install directive;
 never substitute it after approval.
 
@@ -177,7 +177,7 @@ resources to be removed.
 Install the verified admission chart first. Prove signed release images are
 admitted, while mutable, unsigned, wrong-digest, and wrong-workflow images are
 denied. Then install the verified control chart atomically and allow its signed
-migration Job to initialize the empty database through all 164 migrations.
+migration Job to initialize the empty database through all 183 migrations.
 Never execute migration SQL manually. Wait with bounded timeouts for every
 selected component and policy to converge.
 
@@ -215,8 +215,14 @@ Before reporting success, prove at minimum:
 - every expected workload, database, extraction, detector/model, worker,
   autoscaling, admission, private-service, network-policy, and evidence path is
   healthy with stable restart counts;
-- the migration ledger exactly matches the signed 164-entry inventory ending
-  at `0164_verification_preview_grants_cleanup_index.sql`;
+- the migration ledger exactly matches the signed 183-entry inventory ending
+  at `0183_remediation_request_groups_group_index.sql`;
+- scan phase timing and capacity-estimate basis are visible, frozen triage
+  selections remain immutable, durable dispositions and source refreshes make
+  bounded progress, and any governed redaction exemption is value-free,
+  approval-bound, signed, and excluded from HHS Safe Harbor claims;
+- Presidio and the signed contextual LLM remain enabled; neither is disabled
+  to implement or work around a redaction exemption;
 - a new synthetic scan uses occurrence storage v2, completes with full
   coverage accounting, and leaves no compatible ready work unclaimed;
 - lifecycle and production dashboard refresh remain disabled, occurrence purge
